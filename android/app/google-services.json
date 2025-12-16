@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "553789382722",
+    "project_id": "varim-app-a390d",
+    "storage_bucket": "varim-app-a390d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:553789382722:android:62602a4ba8102c41798ddb",
+        "android_client_info": {
+          "package_name": "com.example.varim_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA-6fxVrSmSeGcMNWZW_9eJZ6Xd0r_xNLE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
