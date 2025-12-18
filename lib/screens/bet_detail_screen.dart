@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,7 +8,7 @@ import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/providers/user_provider.dart';
 import 'package:varim_app/models/event_model.dart';
 
-/// Betting detail screen for placing bets on predictions
+/// Trading terminal style betting screen
 class BetDetailScreen extends StatefulWidget {
   final EventModel event;
 
@@ -20,77 +21,93 @@ class BetDetailScreen extends StatefulWidget {
   State<BetDetailScreen> createState() => _BetDetailScreenState();
 }
 
-class _BetDetailScreenState extends State<BetDetailScreen>
-    with SingleTickerProviderStateMixin {
-  // State variables
-  double _wagerAmount = 50.0; // Default starting value
-  final double _minBet = 10.0;
+class _BetDetailScreenState extends State<BetDetailScreen> with SingleTickerProviderStateMixin {
+  // State variables - PRESERVED
+  bool _isPlacingBet = false;
   String _selectedSide = 'VARIM'; // 'VARIM' or 'YOKUM'
-  bool _isPlacingBet = false; // Loading state for placing bet
-
-  late AnimationController _glowController;
+  int _quantity = 1; // Share count instead of slider value
+  final TextEditingController _quantityController = TextEditingController(text: '1');
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
-    _glowController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
+    _tabController = TabController(length: 2, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        setState(() {
+          _selectedSide = _tabController.index == 0 ? 'VARIM' : 'YOKUM';
+        });
+      }
+    });
   }
 
   @override
   void dispose() {
-    _glowController.dispose();
+    _tabController.dispose();
+    _quantityController.dispose();
     super.dispose();
   }
 
-  void _updateWager(double newValue, double userBalance) {
-    setState(() {
-      _wagerAmount = newValue.clamp(_minBet, userBalance);
-    });
+  // Calculate price per share based on probability (YES percentage)
+  int get pricePerShare {
+    // Convert probability to VP price (e.g., 55% = 55 VP per share)
+    if (_selectedSide == 'VARIM') {
+      return (widget.event.varimPercentage * 100).toInt();
+    } else {
+      return (widget.event.yokumPercentage * 100).toInt();
+    }
   }
 
-  void _addToWager(double amount, double userBalance) {
-    setState(() {
-      _wagerAmount = (_wagerAmount + amount).clamp(_minBet, userBalance);
-    });
+  // Calculate total cost (this becomes _wagerAmount for betting logic)
+  int get totalCost {
+    return pricePerShare * _quantity;
   }
 
-  void _setMaxWager(double userBalance) {
-    setState(() {
-      _wagerAmount = userBalance;
-    });
+  // Calculate estimated payout (100 VP per share if win)
+  int get estimatedPayout {
+    return 100 * _quantity;
   }
 
-  /// Get current odd based on selected side
+  // Get current odd - PRESERVED for betting logic
   double get currentOdd {
-    return _selectedSide == 'VARIM'
-        ? widget.event.yesRatio
-        : widget.event.noRatio;
+    return _selectedSide == 'VARIM' ? widget.event.yesRatio : widget.event.noRatio;
   }
 
-  /// Calculate potential win: wagerAmount * currentOdd
-  int get potentialWin {
-    return (_wagerAmount * currentOdd).toInt();
+  void _incrementQuantity() {
+    setState(() {
+      _quantity++;
+      _quantityController.text = _quantity.toString();
+    });
+  }
+
+  void _decrementQuantity() {
+    if (_quantity > 1) {
+      setState(() {
+        _quantity--;
+        _quantityController.text = _quantity.toString();
+      });
+    }
+  }
+
+  void _updateQuantityFromText() {
+    final value = int.tryParse(_quantityController.text) ?? 1;
+    setState(() {
+      _quantity = value < 1 ? 1 : value;
+      _quantityController.text = _quantity.toString();
+    });
+  }
+  
+  // Calculate max affordable quantity based on user balance
+  int _getMaxQuantity(int userBalance) {
+    if (pricePerShare == 0) return 1;
+    return (userBalance / pricePerShare).floor().clamp(1, 999);
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final varimColors = AppTheme.varimColors(context);
-    // Listen to changes - this will rebuild when UserProvider notifies listeners
     final userProvider = Provider.of<UserProvider>(context, listen: true);
-    final userBalance = userProvider.balance.toDouble();
-    
-    // Update wager amount if balance changed
-    if (_wagerAmount > userBalance) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _wagerAmount = userBalance.clamp(_minBet, userBalance);
-        });
-      });
-    }
+    final userBalance = userProvider.balance;
 
     return Scaffold(
       backgroundColor: DesignSystem.backgroundDeep,
@@ -100,390 +117,487 @@ class _BetDetailScreenState extends State<BetDetailScreen>
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
-          color: theme.colorScheme.onSurface,
+          color: DesignSystem.textHeading,
         ),
         title: Text(
-          'Betting Page',
+          'İşlem Ekranı',
           style: TextStyle(
-            color: theme.colorScheme.onSurface,
+            color: DesignSystem.textHeading,
             fontWeight: FontWeight.w600,
+            fontSize: 18,
           ),
         ),
         centerTitle: true,
       ),
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: SingleChildScrollView(
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Event Image & Title Header
+                if (widget.event.imageUrl.isNotEmpty)
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(24),
+                      bottomRight: Radius.circular(24),
+                    ),
+                    child: Image.network(
+                      widget.event.imageUrl,
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 180,
+                          color: DesignSystem.surfaceLight,
+                          child: Icon(
+                            Icons.image_not_supported,
+                            size: 48,
+                            color: DesignSystem.textBody,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                
+                Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                  // Event Image (if available)
-                  if (widget.event.imageUrl.isNotEmpty)
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.network(
-                        widget.event.imageUrl,
-                        height: 200,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 200,
-                            color: theme.colorScheme.surfaceContainer,
-                            child: Icon(
-                              Icons.image_not_supported,
-                              size: 64,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  if (widget.event.imageUrl.isNotEmpty) const SizedBox(height: 24),
-
-                  // Event Title
-                  Text(
-                    widget.event.title,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: theme.colorScheme.onSurface,
+                      // Event Title
+                      Text(
+                        widget.event.title,
+                        style: DesignSystem.headingLarge.copyWith(
+                          fontSize: 22,
                           height: 1.3,
-                          letterSpacing: -0.5,
                         ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Settlement Rule Section
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                        width: 1,
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.gavel,
-                          color: theme.colorScheme.primary,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Sonuçlandırma Kuralı & Kaynak',
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                      fontWeight: FontWeight.w700,
-                                      color: theme.colorScheme.onSurface,
-                                    ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                widget.event.rule?.isNotEmpty == true
-                                    ? widget.event.rule!
-                                    : 'Bu etkinlik resmi sonuçlara göre yönetici tarafından sonuçlandırılacaktır.',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                      height: 1.5,
-                                    ),
-                              ),
-                            ],
+                      const SizedBox(height: 16),
+
+                      // Settlement Rule Card
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: DesignSystem.primaryAccentLight,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: DesignSystem.primaryAccent.withValues(alpha: 0.3),
+                            width: 1,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Chart Placeholder with Neon Wavy Line
-                  _NeonChartPlaceholder(
-                    varimPercentage: widget.event.varimPercentage,
-                    yokumPercentage: widget.event.yokumPercentage,
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Side Selection Toggle
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _SideToggleChip(
-                          label: 'VARIM',
-                          multiplier: widget.event.yesRatio,
-                          isSelected: _selectedSide == 'VARIM',
-                          color: varimColors.varimColor,
-                          textColor: theme.colorScheme.onPrimary,
-                          onTap: () {
-                            setState(() {
-                              _selectedSide = 'VARIM';
-                            });
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _SideToggleChip(
-                          label: 'YOKUM',
-                          multiplier: widget.event.noRatio,
-                          isSelected: _selectedSide == 'YOKUM',
-                          color: varimColors.yokumColor,
-                          textColor: theme.colorScheme.onSecondary,
-                          onTap: () {
-                            setState(() {
-                              _selectedSide = 'YOKUM';
-                            });
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Large Wager Amount Display
-                  Container(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Yatırılan',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontSize: 14,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '${_wagerAmount.toStringAsFixed(0)} VP',
-                          style: TextStyle(
-                            color: varimColors.headerAccent,
-                            fontSize: 42,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Bakiye: ${userBalance.toStringAsFixed(0)} VP',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontSize: 12,
-                              ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Circular Slider
-                  Center(
-                    child: _CircularBetSlider(
-                      value: _wagerAmount,
-                      min: _minBet,
-                      max: userBalance,
-                      headerAccent: varimColors.headerAccent,
-                      surfaceColor: theme.colorScheme.surface,
-                      onSurfaceVariant: theme.colorScheme.onSurfaceVariant,
-                      onChanged: (value) => _updateWager(value, userBalance),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Linear Slider (Alternative input method)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    child: Column(
-                      children: [
-                        SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            activeTrackColor: varimColors.headerAccent,
-                            inactiveTrackColor: theme.colorScheme.surfaceContainerHighest,
-                            thumbColor: varimColors.headerAccent,
-                            overlayColor: varimColors.headerAccent.withValues(alpha: 0.2),
-                            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
-                            trackHeight: 4,
-                          ),
-                          child: Slider(
-                            value: _wagerAmount,
-                            min: _minBet,
-                            max: userBalance,
-                            onChanged: (value) => _updateWager(value, userBalance),
-                          ),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '${_minBet.toInt()} VP',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                    fontSize: 11,
-                                  ),
+                            Icon(
+                              Icons.info_outline,
+                              color: DesignSystem.primaryAccent,
+                              size: 20,
                             ),
-                            Text(
-                              '${userBalance.toInt()} VP',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                    fontSize: 11,
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Sonuçlandırma Kuralı',
+                                    style: DesignSystem.headingSmall.copyWith(
+                                      fontSize: 13,
+                                    ),
                                   ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    (widget.event.rule?.isNotEmpty == true)
+                                        ? widget.event.rule!
+                                        : 'Bu etkinlik resmi sonuçlara göre yönetici tarafından sonuçlandırılacaktır.',
+                                    style: DesignSystem.bodySmall.copyWith(
+                                      fontSize: 12,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                      ),
+                      const SizedBox(height: 24),
 
-                  // Quick Action Buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _QuickActionButton(
-                        label: '+100',
-                        onTap: () => _addToWager(100, userBalance),
-                        theme: theme,
-                        varimColors: varimColors,
-                      ),
-                      const SizedBox(width: 12),
-                      _QuickActionButton(
-                        label: '+500',
-                        onTap: () => _addToWager(500, userBalance),
-                        theme: theme,
-                        varimColors: varimColors,
-                      ),
-                      const SizedBox(width: 12),
-                      _QuickActionButton(
-                        label: 'MAX',
-                        onTap: () => _setMaxWager(userBalance),
-                        theme: theme,
-                        varimColors: varimColors,
-                        isMax: true,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Potential Win Display (BIG and BOLD)
-                  Container(
-                    padding: const EdgeInsets.all(24),
-                    decoration: BoxDecoration(
-                      color: (_selectedSide == 'VARIM'
-                              ? varimColors.varimColor
-                              : varimColors.yokumColor)
-                          .withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: (_selectedSide == 'VARIM'
-                                ? varimColors.varimColor
-                                : varimColors.yokumColor)
-                            .withValues(alpha: 0.5),
-                        width: 2,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (_selectedSide == 'VARIM'
-                                  ? varimColors.varimColor
-                                  : varimColors.yokumColor)
-                              .withValues(alpha: 0.2),
-                          blurRadius: 16,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Tahmini Kazanç',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
-                                fontSize: 14,
-                              ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          '$potentialWin VP',
-                          style: TextStyle(
-                            color: _selectedSide == 'VARIM'
-                                ? varimColors.varimColor
-                                : varimColors.yokumColor,
-                            fontSize: 48,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 1,
+                      // Chart Section
+                      Container(
+                        height: 160,
+                        decoration: BoxDecoration(
+                          color: DesignSystem.surfaceLight,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: DesignSystem.border,
+                            width: 1,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 32),
+                        child: CustomPaint(
+                          painter: _TrendChartPainter(
+                            yesPercentage: widget.event.varimPercentage,
+                            noPercentage: widget.event.yokumPercentage,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
 
-                  // Action Button (Single button that changes based on selection)
-                  _BetActionButton(
-                    label: '$_selectedSide OYNA (${_wagerAmount.toInt()} VP)',
-                    color: _selectedSide == 'VARIM'
-                        ? varimColors.varimColor
-                        : varimColors.yokumColor,
-                    textColor: _selectedSide == 'VARIM'
-                        ? theme.colorScheme.onPrimary
-                        : theme.colorScheme.onSecondary,
-                    icon: _selectedSide == 'VARIM'
-                        ? Icons.thumb_up
-                        : Icons.thumb_down,
-                    isSelected: true,
-                    isLoading: _isPlacingBet,
-                    onPressed: _isPlacingBet
-                        ? null
-                        : () {
-                            _placeBet(_selectedSide == 'VARIM');
-                          },
-                  ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            // Loading overlay
-            if (_isPlacingBet)
-              Container(
-                color: theme.colorScheme.surface.withValues(alpha: 0.8),
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          varimColors.varimColor,
+                      // Current Price Display (Dynamic)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: DesignSystem.surfaceLight,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: DesignSystem.border,
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Güncel Fiyat (${_selectedSide == 'VARIM' ? 'EVET' : 'HAYIR'})',
+                                  style: DesignSystem.bodyMedium,
+                                ),
+                                Text(
+                                  '$pricePerShare VP',
+                                  style: DesignSystem.headingMedium.copyWith(
+                                    color: _selectedSide == 'VARIM' 
+                                      ? DesignSystem.successGreen 
+                                      : DesignSystem.errorRose,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Kullanılabilir Bakiye',
+                                  style: DesignSystem.bodySmall.copyWith(
+                                    fontSize: 11,
+                                  ),
+                                ),
+                                Text(
+                                  '${userBalance.toStringAsFixed(0)} VP',
+                                  style: DesignSystem.bodyMedium.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: DesignSystem.textHeading,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Trading Panel Header
+                      Text(
+                        'İşlem Paneli',
+                        style: DesignSystem.headingMedium.copyWith(
+                          fontSize: 18,
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Text(
-                        'Bahis yerleştiriliyor...',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                              color: theme.colorScheme.onSurface,
+
+                      // YES / NO Tab Selector
+                      Container(
+                        decoration: BoxDecoration(
+                          color: DesignSystem.surfaceLight,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: DesignSystem.border,
+                            width: 1,
+                          ),
+                        ),
+                        child: TabBar(
+                          controller: _tabController,
+                          indicator: BoxDecoration(
+                            borderRadius: BorderRadius.circular(10),
+                            color: _tabController.index == 0
+                                ? DesignSystem.successGreen
+                                : DesignSystem.errorRose,
+                          ),
+                          indicatorSize: TabBarIndicatorSize.tab,
+                          dividerColor: Colors.transparent,
+                          labelColor: Colors.black,
+                          unselectedLabelColor: DesignSystem.textBody,
+                          labelStyle: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                          tabs: [
+                            Tab(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text('EVET'),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${(widget.event.varimPercentage * 100).toInt()}%',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                ],
+                              ),
                             ),
+                            Tab(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Text('HAYIR'),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '${(widget.event.yokumPercentage * 100).toInt()}%',
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
+                      const SizedBox(height: 24),
+
+                      // Quantity Input Section
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: DesignSystem.surfaceLight,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: DesignSystem.border,
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            // Quantity Label
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Adet (Hisse)',
+                                  style: DesignSystem.bodyMedium.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                Text(
+                                  'Maks: ${_getMaxQuantity(userBalance)} adet',
+                                  style: DesignSystem.bodySmall.copyWith(
+                                    fontSize: 11,
+                                    color: DesignSystem.textBody,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Quantity Input with +/- buttons
+                            Row(
+                              children: [
+                                // Minus Button
+                                _QuantityButton(
+                                  icon: Icons.remove,
+                                  onPressed: _decrementQuantity,
+                                  color: DesignSystem.errorRose,
+                                ),
+                                const SizedBox(width: 12),
+
+                                // Quantity Text Field
+                                Expanded(
+                                  child: Container(
+                                    height: 56,
+                                    decoration: BoxDecoration(
+                                      color: DesignSystem.backgroundDeep,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: DesignSystem.primaryAccent.withValues(alpha: 0.3),
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: TextField(
+                                      controller: _quantityController,
+                                      textAlign: TextAlign.center,
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                      style: DesignSystem.headingLarge.copyWith(
+                                        fontSize: 28,
+                                      ),
+                                      decoration: const InputDecoration(
+                                        border: InputBorder.none,
+                                        contentPadding: EdgeInsets.zero,
+                                      ),
+                                      onChanged: (value) => _updateQuantityFromText(),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+
+                                // Plus Button
+                                _QuantityButton(
+                                  icon: Icons.add,
+                                  onPressed: _incrementQuantity,
+                                  color: DesignSystem.successGreen,
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Calculation Breakdown
+                            _CalculationRow(
+                              label: 'Fiyat',
+                              value: '$pricePerShare VP',
+                            ),
+                            const SizedBox(height: 12),
+                            _CalculationRow(
+                              label: 'Adet',
+                              value: 'x $_quantity',
+                            ),
+                            const Divider(height: 24, color: DesignSystem.border),
+                            _CalculationRow(
+                              label: 'Toplam Maliyet',
+                              value: '$totalCost VP',
+                              isTotal: true,
+                              color: DesignSystem.primaryAccent,
+                            ),
+                            const SizedBox(height: 12),
+                            _CalculationRow(
+                              label: 'Tahmini Ödeme',
+                              value: '$estimatedPayout VP',
+                              isTotal: true,
+                              color: DesignSystem.successGreen,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 100), // Space for bottom button
                     ],
                   ),
                 ),
+              ],
+            ),
+          ),
+
+          // Fixed Bottom Confirm Button
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: DesignSystem.backgroundDeep,
+                border: Border(
+                  top: BorderSide(
+                    color: DesignSystem.border,
+                    width: 1,
+                  ),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
               ),
-          ],
-        ),
+              child: SafeArea(
+                top: false,
+                child: ElevatedButton(
+                  onPressed: _isPlacingBet
+                      ? null
+                      : () {
+                          if (totalCost > userBalance) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Yetersiz bakiye! Mevcut: $userBalance VP'),
+                                backgroundColor: DesignSystem.errorRose,
+                              ),
+                            );
+                            return;
+                          }
+                          _placeBet(_selectedSide == 'VARIM');
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _selectedSide == 'VARIM'
+                        ? DesignSystem.successGreen
+                        : DesignSystem.errorRose,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 8,
+                    disabledBackgroundColor: DesignSystem.textBody,
+                  ),
+                  child: _isPlacingBet
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.check_circle, size: 24),
+                            const SizedBox(width: 12),
+                            Text(
+                              'EMRİ ONAYLA ($totalCost VP)',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            ),
+          ),
+
+          // Loading Overlay
+          if (_isPlacingBet)
+            Container(
+              color: DesignSystem.backgroundDeep.withValues(alpha: 0.9),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        DesignSystem.successGreen,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Emir işleniyor...',
+                      style: DesignSystem.bodyLarge.copyWith(
+                        color: DesignSystem.textHeading,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }
 
+  // ========== PRESERVED BETTING LOGIC ==========
   void _placeBet(bool isVarim) async {
-    final theme = Theme.of(context);
     final varimColors = AppTheme.varimColors(context);
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     final user = FirebaseAuth.instance.currentUser;
@@ -500,8 +614,11 @@ class _BetDetailScreenState extends State<BetDetailScreen>
       return;
     }
 
+    // Convert totalCost to wagerAmount for betting logic
+    final wagerAmountInt = totalCost;
+
     // Check if user has enough balance
-    if (_wagerAmount > userProvider.balance) {
+    if (wagerAmountInt > userProvider.balance) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -515,10 +632,10 @@ class _BetDetailScreenState extends State<BetDetailScreen>
     }
 
     // Validate wager amount
-    if (_wagerAmount < _minBet) {
+    if (wagerAmountInt < 10) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Minimum bahis tutarı: ${_minBet.toInt()} VP'),
+          content: const Text('Minimum bahis tutarı: 10 VP'),
           backgroundColor: varimColors.yokumColor,
           behavior: SnackBarBehavior.floating,
         ),
@@ -535,7 +652,6 @@ class _BetDetailScreenState extends State<BetDetailScreen>
       // Use the event ID from the EventModel
       final eventId = widget.event.id;
       final choice = isVarim ? 'VARIM' : 'YOKUM';
-      final wagerAmountInt = _wagerAmount.toInt();
       
       // Get the current odds for the selected choice
       final currentOdds = isVarim ? widget.event.yesRatio : widget.event.noRatio;
@@ -599,7 +715,7 @@ class _BetDetailScreenState extends State<BetDetailScreen>
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
-            backgroundColor: theme.colorScheme.surfaceContainer,
+            backgroundColor: DesignSystem.surfaceLight,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -607,15 +723,14 @@ class _BetDetailScreenState extends State<BetDetailScreen>
               children: [
                 Icon(
                   Icons.check_circle,
-                  color: varimColors.varimColor,
+                  color: DesignSystem.successGreen,
                   size: 32,
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  'Bahis Alındı!',
-                  style: TextStyle(
-                    color: theme.colorScheme.onSurface,
-                    fontWeight: FontWeight.w800,
+                  'Emir Alındı!',
+                  style: DesignSystem.headingMedium.copyWith(
+                    color: DesignSystem.textHeading,
                   ),
                 ),
               ],
@@ -625,14 +740,14 @@ class _BetDetailScreenState extends State<BetDetailScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${_wagerAmount.toStringAsFixed(0)} VP $choice bahsi başarıyla yerleştirildi.',
-                  style: theme.textTheme.bodyLarge,
+                  '$wagerAmountInt VP $_selectedSide emri başarıyla yerleştirildi.',
+                  style: DesignSystem.bodyLarge,
                 ),
                 const SizedBox(height: 16),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainerHighest,
+                    color: DesignSystem.backgroundDeep,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -640,14 +755,13 @@ class _BetDetailScreenState extends State<BetDetailScreen>
                     children: [
                       Text(
                         'Tahmini Kazanç:',
-                        style: theme.textTheme.bodyMedium,
+                        style: DesignSystem.bodyMedium,
                       ),
                       Text(
                         '$potentialWin VP',
-                        style: theme.textTheme.bodyLarge?.copyWith(
-                              color: varimColors.varimColor,
-                              fontWeight: FontWeight.w800,
-                            ),
+                        style: DesignSystem.headingMedium.copyWith(
+                          color: DesignSystem.successGreen,
+                        ),
                       ),
                     ],
                   ),
@@ -661,8 +775,8 @@ class _BetDetailScreenState extends State<BetDetailScreen>
                   Navigator.pop(context); // Go back to home
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: varimColors.varimColor,
-                  foregroundColor: theme.colorScheme.onPrimary,
+                  backgroundColor: DesignSystem.successGreen,
+                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -681,7 +795,7 @@ class _BetDetailScreenState extends State<BetDetailScreen>
             content: Text(
               e.toString().replaceAll('Exception: ', ''),
             ),
-            backgroundColor: varimColors.yokumColor,
+            backgroundColor: DesignSystem.errorRose,
             behavior: SnackBarBehavior.floating,
             duration: const Duration(seconds: 3),
           ),
@@ -698,22 +812,18 @@ class _BetDetailScreenState extends State<BetDetailScreen>
   }
 }
 
-/// Side toggle chip widget
-class _SideToggleChip extends StatelessWidget {
-  final String label;
-  final double multiplier;
-  final bool isSelected;
+// ========== UI COMPONENTS ==========
+
+/// Quantity adjustment button
+class _QuantityButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onPressed;
   final Color color;
-  final Color textColor;
-  final VoidCallback onTap;
 
-  const _SideToggleChip({
-    required this.label,
-    required this.multiplier,
-    required this.isSelected,
+  const _QuantityButton({
+    required this.icon,
+    required this.onPressed,
     required this.color,
-    required this.textColor,
-    required this.onTap,
   });
 
   @override
@@ -721,106 +831,23 @@ class _SideToggleChip extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-          decoration: BoxDecoration(
-            color: isSelected ? color : color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected
-                  ? color
-                  : color.withValues(alpha: 0.3),
-              width: isSelected ? 2 : 1,
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.4),
-                      blurRadius: 12,
-                      spreadRadius: 2,
-                    ),
-                  ]
-                : null,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? textColor : color,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                '${multiplier}x',
-                style: TextStyle(
-                  color: isSelected
-                      ? textColor.withValues(alpha: 0.9)
-                      : color,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Quick action button for wager adjustments
-class _QuickActionButton extends StatelessWidget {
-  final String label;
-  final VoidCallback onTap;
-  final ThemeData theme;
-  final VarimColors varimColors;
-  final bool isMax;
-
-  const _QuickActionButton({
-    required this.label,
-    required this.onTap,
-    required this.theme,
-    required this.varimColors,
-    this.isMax = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
+        onTap: onPressed,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          width: 56,
+          height: 56,
           decoration: BoxDecoration(
-            color: isMax
-                ? varimColors.varimColor.withValues(alpha: 0.2)
-                : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+            color: color.withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: isMax
-                  ? varimColors.varimColor.withValues(alpha: 0.5)
-                  : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              width: 1,
+              color: color.withValues(alpha: 0.5),
+              width: 1.5,
             ),
           ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: isMax
-                  ? varimColors.varimColor
-                  : theme.colorScheme.onSurface,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
+          child: Icon(
+            icon,
+            color: color,
+            size: 28,
           ),
         ),
       ),
@@ -828,87 +855,88 @@ class _QuickActionButton extends StatelessWidget {
   }
 }
 
-/// Neon chart placeholder with wavy line effect
-class _NeonChartPlaceholder extends StatelessWidget {
-  final double varimPercentage;
-  final double yokumPercentage;
+/// Calculation row display
+class _CalculationRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool isTotal;
+  final Color? color;
 
-  const _NeonChartPlaceholder({
-    required this.varimPercentage,
-    required this.yokumPercentage,
+  const _CalculationRow({
+    required this.label,
+    required this.value,
+    this.isTotal = false,
+    this.color,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-                    height: 200,
-                    decoration: BoxDecoration(
-                      color: DesignSystem.surfaceLight,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: DesignSystem.border,
-                        width: 1,
-                      ),
-                    ),
-      child: CustomPaint(
-        painter: _NeonLineChartPainter(
-          varimPercentage: varimPercentage,
-          yokumPercentage: yokumPercentage,
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: (isTotal ? DesignSystem.headingSmall : DesignSystem.bodyMedium).copyWith(
+            fontWeight: isTotal ? FontWeight.w700 : FontWeight.w500,
+          ),
         ),
-        child: Container(),
-      ),
+        Text(
+          value,
+          style: (isTotal ? DesignSystem.headingMedium : DesignSystem.bodyLarge).copyWith(
+            color: color ?? (isTotal ? DesignSystem.textHeading : DesignSystem.textBody),
+            fontWeight: isTotal ? FontWeight.w900 : FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }
 
-/// Custom painter for neon wavy line chart
-class _NeonLineChartPainter extends CustomPainter {
-  final double varimPercentage;
-  final double yokumPercentage;
+/// Trend chart painter for visual effect
+class _TrendChartPainter extends CustomPainter {
+  final double yesPercentage;
+  final double noPercentage;
 
-  _NeonLineChartPainter({
-    required this.varimPercentage,
-    required this.yokumPercentage,
+  _TrendChartPainter({
+    required this.yesPercentage,
+    required this.noPercentage,
   });
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Using DesignSystem colors
     final paint1 = Paint()
-      ..color = DesignSystem.successGreen // VARIM color
+      ..color = DesignSystem.successGreen
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      ..strokeWidth = 2.5
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
     final paint2 = Paint()
-      ..color = DesignSystem.errorRose // YOKUM color
+      ..color = DesignSystem.errorRose
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+      ..strokeWidth = 2.5
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6);
 
     final path1 = Path();
     final path2 = Path();
 
-    final points = 20;
+    final points = 30;
     final stepX = size.width / points;
 
     for (int i = 0; i <= points; i++) {
       final x = i * stepX;
       final baseY = size.height * 0.5;
       
-      // Wavy line for VARIM (green)
+      // YES line
       final y1 = baseY +
-          (size.height * 0.3) *
-              (0.5 + 0.5 * (varimPercentage * 2 - 1)) *
-              (1 + 0.3 * (i % 3 - 1) / 3) *
-              (1 + 0.2 * (i % 5 - 2) / 5);
+          (size.height * 0.25) *
+              (0.5 + 0.5 * (yesPercentage * 2 - 1)) *
+              (1 + 0.2 * (i % 4 - 1.5) / 4);
       
-      // Wavy line for YOKUM (pink)
+      // NO line
       final y2 = baseY +
-          (size.height * 0.3) *
-              (0.5 + 0.5 * (yokumPercentage * 2 - 1)) *
-              (1 + 0.3 * (i % 4 - 1.5) / 4) *
-              (1 + 0.2 * (i % 6 - 3) / 6);
+          (size.height * 0.25) *
+              (0.5 + 0.5 * (noPercentage * 2 - 1)) *
+              (1 + 0.2 * (i % 5 - 2) / 5);
 
       if (i == 0) {
         path1.moveTo(x, y1);
@@ -925,325 +953,4 @@ class _NeonLineChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-/// Circular bet slider widget - Fully interactive
-class _CircularBetSlider extends StatefulWidget {
-  final double value;
-  final double min;
-  final double max;
-  final Color headerAccent;
-  final Color surfaceColor;
-  final Color onSurfaceVariant;
-  final ValueChanged<double> onChanged;
-
-  const _CircularBetSlider({
-    required this.value,
-    required this.min,
-    required this.max,
-    required this.headerAccent,
-    required this.surfaceColor,
-    required this.onSurfaceVariant,
-    required this.onChanged,
-  });
-
-  @override
-  State<_CircularBetSlider> createState() => _CircularBetSliderState();
-}
-
-class _CircularBetSliderState extends State<_CircularBetSlider>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _glowController;
-  bool _isDragging = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _glowController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 2),
-    )..repeat(reverse: true);
-  }
-
-  @override
-  void dispose() {
-    _glowController.dispose();
-    super.dispose();
-  }
-
-  void _updateValue(Offset localPosition) {
-    final size = 200.0;
-    final center = Offset(size / 2, size / 2);
-    final offset = localPosition - center;
-    final distance = offset.distance;
-    
-    // Only update if touch is within the circle radius (more forgiving)
-    if (distance > size / 2 - 40 && distance < size / 2 + 20) {
-      // Calculate angle from top (0 degrees)
-      var angle = offset.direction;
-      // Convert from -π to π range to 0 to 2π
-      if (angle < 0) angle += 2 * 3.14159;
-      // Start from top (-π/2) and normalize to 0-1
-      angle = (angle + 3.14159 / 2) % (2 * 3.14159);
-      final normalizedAngle = angle / (2 * 3.14159);
-      final newValue = widget.min + (normalizedAngle * (widget.max - widget.min));
-      widget.onChanged(newValue.clamp(widget.min, widget.max));
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final size = 200.0;
-    final normalizedValue = (widget.value - widget.min) / (widget.max - widget.min);
-
-    return GestureDetector(
-      onPanStart: (details) {
-        setState(() {
-          _isDragging = true;
-        });
-        final RenderBox? box = context.findRenderObject() as RenderBox?;
-        if (box != null) {
-          final localPosition = box.globalToLocal(details.globalPosition);
-          _updateValue(localPosition);
-        }
-      },
-      onPanUpdate: (details) {
-        final RenderBox? box = context.findRenderObject() as RenderBox?;
-        if (box != null) {
-          final localPosition = box.globalToLocal(details.globalPosition);
-          _updateValue(localPosition);
-        }
-      },
-      onPanEnd: (details) {
-        setState(() {
-          _isDragging = false;
-        });
-      },
-      onTapDown: (details) {
-        final RenderBox? box = context.findRenderObject() as RenderBox?;
-        if (box != null) {
-          final localPosition = box.globalToLocal(details.globalPosition);
-          _updateValue(localPosition);
-        }
-      },
-      child: AnimatedBuilder(
-        animation: _glowController,
-        builder: (context, child) {
-          return Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: widget.headerAccent
-                      .withValues(alpha: _isDragging ? 0.6 : 0.3 + 0.2 * _glowController.value),
-                  blurRadius: _isDragging ? 30 : 20 + 10 * _glowController.value,
-                  spreadRadius: _isDragging ? 8 : 5 + 3 * _glowController.value,
-                ),
-              ],
-            ),
-            child: CustomPaint(
-              painter: _CircularSliderPainter(
-                value: normalizedValue,
-                glowIntensity: _isDragging ? 1.0 : _glowController.value,
-                headerAccent: widget.headerAccent,
-                surfaceColor: widget.surfaceColor,
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.account_balance_wallet,
-                      color: widget.headerAccent,
-                      size: 32,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Yatırılan:',
-                      style: TextStyle(
-                        color: widget.onSurfaceVariant,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${widget.value.toStringAsFixed(0)} VP',
-                      style: TextStyle(
-                        color: widget.headerAccent,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// Custom painter for circular slider
-class _CircularSliderPainter extends CustomPainter {
-  final double value;
-  final double glowIntensity;
-  final Color headerAccent;
-  final Color surfaceColor;
-
-  _CircularSliderPainter({
-    required this.value,
-    required this.glowIntensity,
-    required this.headerAccent,
-    required this.surfaceColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2 - 20;
-
-    // Background circle
-    final backgroundPaint = Paint()
-      ..color = surfaceColor
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 8;
-
-    canvas.drawCircle(center, radius, backgroundPaint);
-
-    // Progress arc
-    final progressPaint = Paint()
-      ..color = headerAccent
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = MaskFilter.blur(
-        BlurStyle.normal,
-        8 + 4 * glowIntensity,
-      );
-
-    final sweepAngle = 2 * 3.14159 * value;
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -3.14159 / 2,
-      sweepAngle,
-      false,
-      progressPaint,
-    );
-
-    // Glow effect
-    final glowPaint = Paint()
-      ..color = headerAccent
-          .withValues(alpha: 0.3 * glowIntensity)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 12
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
-
-    canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
-      -3.14159 / 2,
-      sweepAngle,
-      false,
-      glowPaint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return oldDelegate is! _CircularSliderPainter ||
-        oldDelegate.value != value ||
-        oldDelegate.glowIntensity != glowIntensity ||
-        oldDelegate.headerAccent != headerAccent ||
-        oldDelegate.surfaceColor != surfaceColor;
-  }
-}
-
-/// Bet action button with glow effect
-class _BetActionButton extends StatelessWidget {
-  final String label;
-  final Color color;
-  final Color textColor;
-  final IconData icon;
-  final bool isSelected;
-  final bool isLoading;
-  final VoidCallback? onPressed;
-
-  const _BetActionButton({
-    required this.label,
-    required this.color,
-    required this.textColor,
-    required this.icon,
-    required this.isSelected,
-    this.isLoading = false,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: isSelected
-            ? [
-                BoxShadow(
-                  color: color.withValues(alpha: 0.5),
-                  blurRadius: 20,
-                  spreadRadius: 2,
-                ),
-              ]
-            : null,
-      ),
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isLoading
-              ? color.withValues(alpha: 0.6)
-              : color,
-          foregroundColor: textColor,
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-            side: BorderSide(
-              color: isSelected
-                  ? color.withValues(alpha: 0.8)
-                  : Colors.transparent,
-              width: 2,
-            ),
-          ),
-          elevation: isSelected ? 8 : 2,
-          disabledBackgroundColor: color.withValues(alpha: 0.6),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isLoading)
-              SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(textColor),
-                ),
-              )
-            else
-              Icon(icon, size: 24),
-            const SizedBox(width: 12),
-            Text(
-              isLoading ? 'İşleniyor...' : label,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
