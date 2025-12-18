@@ -27,8 +27,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
     'Spor',
     'Ekonomi',
     'Magazin',
-    'Siyaset',
     'Kripto',
+    'E-Spor',
+    'Dünya',
   ];
 
   @override
