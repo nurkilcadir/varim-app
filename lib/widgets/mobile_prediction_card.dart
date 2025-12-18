@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 
-/// Mobile-first prediction card matching Kalshi-style layout
+/// Compact financial-style prediction card
 class MobilePredictionCard extends StatelessWidget {
   final String title;
   final IconData? icon;
@@ -24,7 +24,7 @@ class MobilePredictionCard extends StatelessWidget {
     this.onCardTap,
   });
 
-  String _formatPoolSize(int size) {
+  String _formatVolume(int size) {
     if (size >= 1000000) {
       return '${(size / 1000000).toStringAsFixed(1)}M';
     } else if (size >= 1000) {
@@ -35,120 +35,138 @@ class MobilePredictionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final varimColors = AppTheme.varimColors(context);
-    
+    // Calculate percentages for button labels
+    final yesPercent = (varimPercentage * 100).toInt();
+    final noPercent = 100 - yesPercent;
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
+        color: DesignSystem.surfaceLight,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+          color: DesignSystem.border,
           width: 1,
         ),
       ),
-      child: InkWell(
-        onTap: onCardTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Row 1: Icon + Title
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onCardTap,
+          borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                if (icon != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: 20,
-                      color: theme.colorScheme.onSurfaceVariant,
+                // Left: Image/Icon (40x40)
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: DesignSystem.backgroundDeep,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: DesignSystem.border,
+                      width: 1,
                     ),
                   ),
-                  const SizedBox(width: 12),
-                ],
+                  child: icon != null
+                      ? Icon(
+                          icon,
+                          size: 24,
+                          color: DesignSystem.primaryAccent,
+                        )
+                      : const Icon(
+                          Icons.trending_up,
+                          size: 24,
+                          color: DesignSystem.primaryAccent,
+                        ),
+                ),
+                const SizedBox(width: 12),
+
+                // Middle: Title + Volume/Sparkline
                 Expanded(
-                  child: Text(
-                    title,
-                    style: theme.textTheme.titleMedium?.copyWith(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Title
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: DesignSystem.textHeading,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: theme.colorScheme.onSurface,
                           height: 1.3,
                         ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      // Volume + Sparkline
+                      Row(
+                        children: [
+                          // Volume icon
+                          const Icon(
+                            Icons.bar_chart,
+                            size: 14,
+                            color: DesignSystem.textBody,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Hacim: ${_formatVolume(poolSize)} VP',
+                            style: const TextStyle(
+                              color: DesignSystem.textBody,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
+                ),
+                const SizedBox(width: 8),
+
+                // Right: Compact Pill Buttons (Side-by-Side)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Evet Pill
+                    _CompactPillButton(
+                      label: 'Evet\n$yesPercent%',
+                      color: DesignSystem.successGreen,
+                      onTap: onVarimTap,
+                    ),
+                    const SizedBox(width: 6),
+                    // Hayır Pill
+                    _CompactPillButton(
+                      label: 'Hayır\n$noPercent%',
+                      color: DesignSystem.errorRose,
+                      onTap: onYokumTap,
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // Row 2: Two Large Buttons - Full Width with Gap
-            Row(
-              children: [
-                // Left Button - VARIM (proportional width based on percentage)
-                Expanded(
-                  flex: (varimPercentage * 100).round().clamp(1, 100),
-                  child: _BetButton(
-                    label: 'VARIM',
-                    percentage: (varimPercentage * 100).toStringAsFixed(0),
-                    color: varimColors.varimColor,
-                    textColor: theme.colorScheme.onPrimary,
-                    onTap: onVarimTap,
-                  ),
-                ),
-                const SizedBox(width: 8), // Gap between buttons
-                // Right Button - YOKUM (proportional width based on percentage)
-                Expanded(
-                  flex: (yokumPercentage * 100).round().clamp(1, 100),
-                  child: _BetButton(
-                    label: 'YOKUM',
-                    percentage: (yokumPercentage * 100).toStringAsFixed(0),
-                    color: varimColors.yokumColor,
-                    textColor: theme.colorScheme.onSecondary,
-                    onTap: onYokumTap,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Row 3: Meta - Pool Size
-            Text(
-              'Pool: ${_formatPoolSize(poolSize)} VP',
-              style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontSize: 12,
-                  ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Bet button widget with neon styling
-class _BetButton extends StatelessWidget {
+/// Compact pill-shaped button for Evet/Hayır actions
+class _CompactPillButton extends StatelessWidget {
   final String label;
-  final String percentage;
   final Color color;
-  final Color textColor;
   final VoidCallback? onTap;
 
-  const _BetButton({
+  const _CompactPillButton({
     required this.label,
-    required this.percentage,
     required this.color,
-    required this.textColor,
-    required this.onTap,
+    this.onTap,
   });
 
   @override
@@ -157,47 +175,34 @@ class _BetButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-          child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: 62,
+          height: 46,
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
           decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: color.withValues(alpha: 0.4),
-                blurRadius: 12,
-                spreadRadius: 1,
-              ),
-            ],
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: color,
+              width: 1.5,
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.8,
-                ),
+          child: Center(
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: color,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.2,
+                height: 1.2,
               ),
-              const SizedBox(height: 6),
-              Text(
-                '$percentage%',
-                style: TextStyle(
-                  color: textColor.withValues(alpha: 0.95),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-

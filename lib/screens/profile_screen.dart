@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:varim_app/widgets/custom_header.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/providers/user_provider.dart';
 import 'package:varim_app/screens/admin_screen.dart';
 
@@ -27,7 +28,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final currentUser = userProvider.currentUser;
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: DesignSystem.backgroundDeep,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(
@@ -625,7 +626,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         },
       );
 
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('10.000 VP başarıyla eklendi!'),
@@ -636,7 +637,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     } catch (e) {
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Hata: ${e.toString()}'),
@@ -646,7 +647,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }
     } finally {
-      if (mounted) {
+      if (context.mounted) {
         setState(() {
           _isLoadingBalance = false;
         });

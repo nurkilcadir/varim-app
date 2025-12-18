@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/providers/user_provider.dart';
 import 'package:varim_app/models/event_model.dart';
 
@@ -92,7 +93,7 @@ class _BetDetailScreenState extends State<BetDetailScreen>
     }
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: DesignSystem.backgroundDeep,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -411,7 +412,7 @@ class _BetDetailScreenState extends State<BetDetailScreen>
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          '${potentialWin} VP',
+                          '$potentialWin VP',
                           style: TextStyle(
                             color: _selectedSide == 'VARIM'
                                 ? varimColors.varimColor
@@ -428,7 +429,7 @@ class _BetDetailScreenState extends State<BetDetailScreen>
 
                   // Action Button (Single button that changes based on selection)
                   _BetActionButton(
-                    label: '${_selectedSide} OYNA (${_wagerAmount.toInt()} VP)',
+                    label: '$_selectedSide OYNA (${_wagerAmount.toInt()} VP)',
                     color: _selectedSide == 'VARIM'
                         ? varimColors.varimColor
                         : varimColors.yokumColor,
@@ -839,18 +840,16 @@ class _NeonChartPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
     return Container(
-      height: 200,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-          width: 1,
-        ),
-      ),
+                    height: 200,
+                    decoration: BoxDecoration(
+                      color: DesignSystem.surfaceLight,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: DesignSystem.border,
+                        width: 1,
+                      ),
+                    ),
       child: CustomPaint(
         painter: _NeonLineChartPainter(
           varimPercentage: varimPercentage,
@@ -874,16 +873,15 @@ class _NeonLineChartPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    // Note: CustomPaint doesn't have access to context, so we use the theme colors directly
-    // These should match the theme's varim/yokum colors
+    // Using DesignSystem colors
     final paint1 = Paint()
-      ..color = const Color(0xFF00FF94) // VARIM color from theme
+      ..color = DesignSystem.successGreen // VARIM color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     final paint2 = Paint()
-      ..color = const Color(0xFFFF0055) // YOKUM color from theme
+      ..color = DesignSystem.errorRose // YOKUM color
       ..style = PaintingStyle.stroke
       ..strokeWidth = 3.0
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);

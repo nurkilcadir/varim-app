@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/providers/user_provider.dart';
 
 /// Custom header with V logo and user VP badge
@@ -23,10 +24,10 @@ class CustomHeader extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: DesignSystem.surfaceLight,
         border: Border(
           bottom: BorderSide(
-            color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+            color: DesignSystem.border,
             width: 1,
           ),
         ),

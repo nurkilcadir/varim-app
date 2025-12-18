@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 
 /// Bottom navigation bar for mobile
 class BottomNavBar extends StatelessWidget {
@@ -18,7 +19,7 @@ class BottomNavBar extends StatelessWidget {
     
     return Container(
       decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+        color: DesignSystem.surfaceLight,
         border: Border(
           top: BorderSide(
             color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),

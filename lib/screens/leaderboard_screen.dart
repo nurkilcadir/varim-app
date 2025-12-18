@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:varim_app/widgets/custom_header.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/models/user_model.dart';
 
 /// Gamified leaderboard screen with podium and rankings
@@ -24,7 +25,7 @@ class LeaderboardScreen extends StatelessWidget {
     final currentUser = FirebaseAuth.instance.currentUser;
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: DesignSystem.backgroundDeep,
       body: SafeArea(
         child: StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
@@ -247,16 +248,16 @@ class LeaderboardScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer,
+        color: DesignSystem.surfaceLight,
         border: Border(
           top: BorderSide(
-            color: varimColors.varimColor.withValues(alpha: 0.3),
+            color: DesignSystem.successGreen.withValues(alpha: 0.3),
             width: 2,
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow.withValues(alpha: 0.3),
+            color: DesignSystem.successGreen.withValues(alpha: 0.2),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -348,15 +349,15 @@ class _PodiumWidget extends StatelessWidget {
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainer,
+        color: DesignSystem.surfaceLight,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: varimColors.varimColor.withValues(alpha: 0.2),
+          color: DesignSystem.border,
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.colorScheme.shadow.withValues(alpha: 0.3),
+            color: DesignSystem.primaryAccent.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),

@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:varim_app/widgets/portfolio_card.dart';
 import 'package:varim_app/widgets/custom_header.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/providers/user_provider.dart';
 
 /// Portfolio screen showing user's active bets and history
@@ -37,7 +38,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
     final varimColors = AppTheme.varimColors(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: DesignSystem.backgroundDeep,
       body: SafeArea(
         child: Consumer<UserProvider>(
           builder: (context, userProvider, child) {
@@ -56,15 +57,15 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surfaceContainer,
+                    color: DesignSystem.surfaceLight,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: varimColors.varimColor.withValues(alpha: 0.2),
+                      color: DesignSystem.successGreen.withValues(alpha: 0.2),
                       width: 1,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.colorScheme.shadow.withValues(alpha: 0.2),
+                        color: DesignSystem.successGreen.withValues(alpha: 0.1),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -75,8 +76,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                     children: [
                       Text(
                         'Toplam Bakiye',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                        style: DesignSystem.bodySmall.copyWith(
                               fontSize: 12,
                             ),
                       ),
@@ -96,7 +96,7 @@ class _PortfolioScreenState extends State<PortfolioScreen>
                         Text(
                           '${totalBalance.toStringAsFixed(0)} VP',
                           style: TextStyle(
-                            color: varimColors.varimColor,
+                            color: DesignSystem.successGreen,
                             fontSize: 32,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 1,

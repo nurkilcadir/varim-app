@@ -23,7 +23,7 @@ class DesignSystem {
   // Gradients
   static LinearGradient get primaryGradient => LinearGradient(
         colors: [
-          primaryAccent.withOpacity(0.8),
+          primaryAccent.withValues(alpha: 0.8),
           primaryAccent,
         ],
         begin: Alignment.topLeft,
@@ -32,7 +32,7 @@ class DesignSystem {
 
   static LinearGradient get successGradient => LinearGradient(
         colors: [
-          successGreen.withOpacity(0.8),
+          successGreen.withValues(alpha: 0.8),
           successGreen,
         ],
         begin: Alignment.topLeft,
@@ -40,9 +40,9 @@ class DesignSystem {
       );
 
   // Opacity Variants
-  static Color get primaryAccentLight => primaryAccent.withOpacity(0.15);
-  static Color get successLight => successGreen.withOpacity(0.15);
-  static Color get errorLight => errorRose.withOpacity(0.15);
+  static Color get primaryAccentLight => primaryAccent.withValues(alpha: 0.15);
+  static Color get successLight => successGreen.withValues(alpha: 0.15);
+  static Color get errorLight => errorRose.withValues(alpha: 0.15);
 
   // Text Styles
   static TextStyle get headingLarge => const TextStyle(
@@ -96,12 +96,12 @@ class DesignSystem {
         color: surfaceLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: primaryAccent.withOpacity(0.3),
+          color: primaryAccent.withValues(alpha: 0.3),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: primaryAccent.withOpacity(0.1),
+            color: primaryAccent.withValues(alpha: 0.1),
             blurRadius: 12,
             spreadRadius: 2,
           ),

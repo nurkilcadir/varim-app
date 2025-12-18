@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 
 /// Screen for creating new events (Admin only)
 class AddEventScreen extends StatefulWidget {
@@ -157,7 +158,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
     final varimColors = AppTheme.varimColors(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: DesignSystem.backgroundDeep,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -211,7 +212,7 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
                 // Category Dropdown
                 DropdownButtonFormField<String>(
-                  value: _selectedCategory,
+                  initialValue: _selectedCategory,
                   decoration: InputDecoration(
                     labelText: 'Kategori *',
                     border: OutlineInputBorder(

@@ -4,6 +4,7 @@ import 'package:varim_app/screens/portfolio_screen.dart';
 import 'package:varim_app/screens/leaderboard_screen.dart';
 import 'package:varim_app/screens/profile_screen.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 
 /// Main screen wrapper with bottom navigation
 class MainScreen extends StatefulWidget {
@@ -29,7 +30,7 @@ class _MainScreenState extends State<MainScreen> {
     final varimColors = AppTheme.varimColors(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: DesignSystem.backgroundDeep,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,

@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final varimColors = AppTheme.varimColors(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: DesignSystem.backgroundDeep,
       body: SafeArea(
         child: Column(
           children: [

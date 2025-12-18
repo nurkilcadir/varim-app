@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/models/user_model.dart';
 
 /// Login/Register screen with Firebase Authentication
@@ -183,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final varimColors = AppTheme.varimColors(context);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
+      backgroundColor: DesignSystem.backgroundDeep,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(

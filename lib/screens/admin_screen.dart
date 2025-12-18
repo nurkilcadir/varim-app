@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:varim_app/widgets/custom_header.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/models/event_model.dart';
 import 'package:varim_app/screens/add_event_screen.dart';
 
@@ -36,10 +37,10 @@ class _AdminScreenState extends State<AdminScreen>
     final varimColors = AppTheme.varimColors(context);
 
     return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: theme.colorScheme.surface,
-        body: SafeArea(
+        length: 2,
+        child: Scaffold(
+          backgroundColor: DesignSystem.backgroundDeep,
+          body: SafeArea(
           child: Column(
             children: [
               // Custom Header
