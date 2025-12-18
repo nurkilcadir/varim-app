@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:varim_app/theme/design_system.dart';
 
 /// Custom color scheme extension for VARIM app
 @immutable
 class VarimColors extends ThemeExtension<VarimColors> {
-  final Color varimColor; // Neon Electric Green (YES)
-  final Color yokumColor; // Neon Hot Pink (NO)
-  final Color cardBackground; // Card background color
-  final Color headerAccent; // Blue accent for header/VP badge
-  final Color headerAccentDark; // Darker blue for gradients
-  final Color categoryGlowTrend; // Orange for Trend category
-  final Color categoryGlowEconomy; // Gold for Economy category
+  final Color varimColor;
+  final Color yokumColor;
+  final Color cardBackground;
+  final Color headerAccent;
+  final Color headerAccentDark;
+  final Color categoryGlowTrend;
+  final Color categoryGlowEconomy;
 
   const VarimColors({
     required this.varimColor,
@@ -60,237 +61,159 @@ class VarimColors extends ThemeExtension<VarimColors> {
   }
 }
 
-/// VARIM App Theme Configuration
-/// Modern Dark Mode with Neon Accent Colors
+/// VARIM App Theme
 class AppTheme {
-  /// Main theme data for the app (Dark Mode)
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       
-      // Color Scheme - All colors defined here
       colorScheme: const ColorScheme.dark(
-        // Primary colors
-        primary: Color(0xFF00FF94), // Neon Electric Green (VARIM/YES)
-        secondary: Color(0xFFFF0055), // Neon Hot Pink (YOKUM/NO)
-        
-        // Surface colors
-        surface: Color(0xFF121212), // Deep charcoal background (main surface)
-        surfaceContainerHighest: Color(0xFF2C2C2C), // Surface variant
-        surfaceContainer: Color(0xFF181818), // Card background
-        surfaceContainerLow: Color(0xFF1E1E1E), // Surface dark
-        
-        // Error
-        error: Color(0xFFCF6679),
-        
-        // On colors (text/icons on colored backgrounds)
-        onPrimary: Color(0xFF000000), // Black text on neon green
-        onSecondary: Color(0xFFFFFFFF), // White text on neon pink
-        onSurface: Color(0xFFFFFFFF), // Text on surface
-        onSurfaceVariant: Color(0xFFB0B0B0), // Muted text
-        onError: Color(0xFF000000),
+        primary: DesignSystem.successGreen,
+        secondary: DesignSystem.errorRose,
+        surface: DesignSystem.backgroundDeep,
+        surfaceContainerHighest: DesignSystem.border,
+        surfaceContainer: DesignSystem.surfaceLight,
+        surfaceContainerLow: DesignSystem.backgroundDeep,
+        tertiary: DesignSystem.primaryAccent,
+        error: DesignSystem.errorRose,
+        onPrimary: Colors.black,
+        onSecondary: Colors.white,
+        onSurface: DesignSystem.textHeading,
+        onSurfaceVariant: DesignSystem.textBody,
+        onError: Colors.white,
       ),
       
-      // Custom color extensions
       extensions: <ThemeExtension<dynamic>>[
         const VarimColors(
-          varimColor: Color(0xFF00FF94), // Neon Electric Green
-          yokumColor: Color(0xFFFF0055), // Neon Hot Pink
-          cardBackground: Color(0xFF181818), // Darker card background
-          headerAccent: Color(0xFF4A9EFF), // Blue accent
-          headerAccentDark: Color(0xFF0066CC), // Darker blue
-          categoryGlowTrend: Color(0xFFFF6B35), // Orange
-          categoryGlowEconomy: Color(0xFFFFD700), // Gold
+          varimColor: DesignSystem.successGreen,
+          yokumColor: DesignSystem.errorRose,
+          cardBackground: DesignSystem.surfaceLight,
+          headerAccent: DesignSystem.primaryAccent,
+          headerAccentDark: Color(0xFF2563EB),
+          categoryGlowTrend: Color(0xFFF59E0B),
+          categoryGlowEconomy: Color(0xFFFBBF24),
         ),
       ],
       
-      // Scaffold Background
-      scaffoldBackgroundColor: const Color(0xFF121212), // Same as surface
+      scaffoldBackgroundColor: DesignSystem.backgroundDeep,
+      cardColor: DesignSystem.surfaceLight,
       
-      // App Bar Theme
-      appBarTheme: AppBarTheme(
-        backgroundColor: const Color(0xFF1E1E1E),
-        elevation: 0,
-        centerTitle: true,
-        titleTextStyle: GoogleFonts.inter(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFFFFFFFF),
-        ),
-        iconTheme: const IconThemeData(color: Color(0xFFFFFFFF)),
-      ),
-      
-      // Card Theme
       cardTheme: CardThemeData(
-        color: const Color(0xFF1E1E1E),
-        elevation: 2,
+        color: DesignSystem.surfaceLight,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: DesignSystem.border, width: 1),
         ),
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       
-      // Text Theme
+      appBarTheme: const AppBarTheme(
+        backgroundColor: DesignSystem.backgroundDeep,
+        elevation: 0,
+        centerTitle: true,
+        titleTextStyle: TextStyle(
+          color: DesignSystem.textHeading,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+        ),
+        iconTheme: IconThemeData(color: DesignSystem.textHeading),
+      ),
+      
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: DesignSystem.surfaceLight,
+        selectedItemColor: DesignSystem.primaryAccent,
+        unselectedItemColor: DesignSystem.unselectedItem,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+        selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+        unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w400, fontSize: 12),
+      ),
+      
+      dividerColor: DesignSystem.border,
+      dividerTheme: const DividerThemeData(color: DesignSystem.border, thickness: 1),
+      
       textTheme: GoogleFonts.interTextTheme(
         ThemeData.dark().textTheme.copyWith(
-          displayLarge: GoogleFonts.inter(
-            fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFFFFFFFF),
-          ),
-          displayMedium: GoogleFonts.inter(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: const Color(0xFFFFFFFF),
-          ),
-          displaySmall: GoogleFonts.inter(
-            fontSize: 24,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFFFFFFFF),
-          ),
-          headlineMedium: GoogleFonts.inter(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFFFFFFFF),
-          ),
-          headlineSmall: GoogleFonts.inter(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFFFFFFFF),
-          ),
-          titleLarge: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFFFFFFFF),
-          ),
-          titleMedium: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFFE0E0E0),
-          ),
-          bodyLarge: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.normal,
-            color: const Color(0xFFE0E0E0),
-          ),
-          bodyMedium: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.normal,
-            color: const Color(0xFFE0E0E0),
-          ),
-          bodySmall: GoogleFonts.inter(
-            fontSize: 12,
-            fontWeight: FontWeight.normal,
-            color: const Color(0xFFB0B0B0),
-          ),
-          labelLarge: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: const Color(0xFFFFFFFF),
-          ),
+          displayLarge: GoogleFonts.inter(fontSize: 32, fontWeight: FontWeight.bold, color: DesignSystem.textHeading),
+          displayMedium: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.bold, color: DesignSystem.textHeading),
+          displaySmall: GoogleFonts.inter(fontSize: 24, fontWeight: FontWeight.w600, color: DesignSystem.textHeading),
+          headlineMedium: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w600, color: DesignSystem.textHeading),
+          headlineSmall: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w600, color: DesignSystem.textHeading),
+          titleLarge: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600, color: DesignSystem.textHeading),
+          titleMedium: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: DesignSystem.textBody),
+          bodyLarge: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.normal, color: DesignSystem.textBody),
+          bodyMedium: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.normal, color: DesignSystem.textBody),
+          bodySmall: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.normal, color: DesignSystem.textBody),
+          labelLarge: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: DesignSystem.textHeading),
         ),
       ),
       
-      // Button Themes
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF00FF94),
-          foregroundColor: const Color(0xFF000000),
-          elevation: 2,
+          backgroundColor: DesignSystem.primaryAccent,
+          foregroundColor: DesignSystem.textHeading,
+          elevation: 0,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          textStyle: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFF00FF94),
-          side: const BorderSide(color: Color(0xFF00FF94), width: 2),
+          foregroundColor: DesignSystem.primaryAccent,
+          side: const BorderSide(color: DesignSystem.primaryAccent, width: 2),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          textStyle: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          textStyle: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w600),
         ),
       ),
       
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: const Color(0xFF00FF94),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          textStyle: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-          ),
+          foregroundColor: DesignSystem.primaryAccent,
+          textStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600),
         ),
       ),
       
-      // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFF2C2C2C),
+        fillColor: DesignSystem.surfaceLight,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
+          borderSide: const BorderSide(color: DesignSystem.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF2C2C2C), width: 1),
+          borderSide: const BorderSide(color: DesignSystem.border, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF00FF94), width: 2),
+          borderSide: const BorderSide(color: DesignSystem.primaryAccent, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFCF6679), width: 1),
+          borderSide: const BorderSide(color: DesignSystem.errorRose, width: 1),
         ),
-        labelStyle: GoogleFonts.inter(
-          color: const Color(0xFFB0B0B0),
-          fontSize: 14,
-        ),
-        hintStyle: GoogleFonts.inter(
-          color: const Color(0xFFB0B0B0),
-          fontSize: 14,
-        ),
+        labelStyle: GoogleFonts.inter(color: DesignSystem.textBody, fontSize: 14),
+        hintStyle: GoogleFonts.inter(color: DesignSystem.textBody, fontSize: 14),
       ),
       
-      // Icon Theme
-      iconTheme: const IconThemeData(
-        color: Color(0xFFE0E0E0),
-        size: 24,
-      ),
-      
-      // Divider Theme
-      dividerTheme: const DividerThemeData(
-        color: Color(0xFF2C2C2C),
-        thickness: 1,
-        space: 1,
-      ),
+      iconTheme: const IconThemeData(color: DesignSystem.textBody, size: 24),
     );
   }
   
-  /// Helper extension to access custom colors from theme
   static VarimColors varimColors(BuildContext context) {
     return Theme.of(context).extension<VarimColors>() ?? 
            const VarimColors(
-             varimColor: Color(0xFF00FF94),
-             yokumColor: Color(0xFFFF0055),
-             cardBackground: Color(0xFF181818),
-             headerAccent: Color(0xFF4A9EFF),
-             headerAccentDark: Color(0xFF0066CC),
-             categoryGlowTrend: Color(0xFFFF6B35),
-             categoryGlowEconomy: Color(0xFFFFD700),
+             varimColor: DesignSystem.successGreen,
+             yokumColor: DesignSystem.errorRose,
+             cardBackground: DesignSystem.surfaceLight,
+             headerAccent: DesignSystem.primaryAccent,
+             headerAccentDark: Color(0xFF2563EB),
+             categoryGlowTrend: Color(0xFFF59E0B),
+             categoryGlowEconomy: Color(0xFFFBBF24),
            );
   }
 }

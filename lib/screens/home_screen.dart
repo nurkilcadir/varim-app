@@ -4,6 +4,7 @@ import 'package:varim_app/widgets/mobile_prediction_card.dart';
 import 'package:varim_app/widgets/custom_header.dart';
 import 'package:varim_app/screens/bet_detail_screen.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/models/event_model.dart';
 
 /// Home screen with mobile-first Kalshi-style layout
@@ -114,6 +115,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       height: 56,
       padding: const EdgeInsets.symmetric(vertical: 8),
+      decoration: BoxDecoration(
+        color: DesignSystem.backgroundDeep,
+        border: Border(
+          bottom: BorderSide(
+            color: DesignSystem.border,
+            width: 1,
+          ),
+        ),
+      ),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -131,17 +141,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   Icon(
                     category['icon'] as IconData,
                     size: 18,
-                    color: isSelected
-                        ? theme.colorScheme.onPrimary
-                        : theme.colorScheme.onSurfaceVariant,
+                    color: isSelected ? Colors.black : DesignSystem.textBody,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     category['label'] as String,
                     style: TextStyle(
-                      color: isSelected
-                          ? theme.colorScheme.onPrimary
-                          : theme.colorScheme.onSurfaceVariant,
+                      color: isSelected ? Colors.black : DesignSystem.textBody,
                       fontSize: 14,
                       fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                     ),
@@ -153,19 +159,16 @@ class _HomeScreenState extends State<HomeScreen> {
                 if (selected) {
                   setState(() {
                     _selectedCategory = category['label'] as String;
-                    // Reset sort to volume when switching to Trendler
                     if (_selectedCategory == 'Trendler') {
                       _selectedSort = 'volume';
                     }
                   });
                 }
               },
-              selectedColor: varimColors.varimColor,
-              backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              selectedColor: DesignSystem.successGreen,
+              backgroundColor: DesignSystem.surfaceLight,
               side: BorderSide(
-                color: isSelected
-                    ? varimColors.varimColor.withValues(alpha: 0.6)
-                    : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                color: isSelected ? DesignSystem.successGreen : DesignSystem.border,
                 width: isSelected ? 2 : 1,
               ),
               shape: RoundedRectangleBorder(

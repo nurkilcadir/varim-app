@@ -3,6 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/screens/main_screen.dart';
 import 'package:varim_app/screens/login_screen.dart';
 import 'package:varim_app/providers/user_provider.dart';
