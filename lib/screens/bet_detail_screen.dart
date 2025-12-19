@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:varim_app/theme/app_theme.dart';
 import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/providers/user_provider.dart';
@@ -21,13 +22,22 @@ class BetDetailScreen extends StatefulWidget {
   State<BetDetailScreen> createState() => _BetDetailScreenState();
 }
 
-class _BetDetailScreenState extends State<BetDetailScreen> with SingleTickerProviderStateMixin {
+class _BetDetailScreenState extends State<BetDetailScreen> with TickerProviderStateMixin {
   // State variables - PRESERVED
   bool _isPlacingBet = false;
   String _selectedSide = 'VARIM'; // 'VARIM' or 'YOKUM'
   int _quantity = 1; // Share count instead of slider value
   final TextEditingController _quantityController = TextEditingController(text: '1');
   late TabController _tabController;
+  
+  // Animation controllers for gamification
+  late AnimationController _stampAnimationController;
+  late Animation<double> _stampScaleAnimation;
+  late Animation<double> _stampGlowAnimation;
+  
+  // Audio players for sound effects
+  final AudioPlayer _tickPlayer = AudioPlayer();
+  final AudioPlayer _successPlayer = AudioPlayer();
 
   @override
   void initState() {
@@ -40,13 +50,57 @@ class _BetDetailScreenState extends State<BetDetailScreen> with SingleTickerProv
         });
       }
     });
+    
+    // Initialize stamp animation controller
+    _stampAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    
+    // Scale animation with overshoot effect
+    _stampScaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _stampAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
+    
+    // Glow pulse animation
+    _stampGlowAnimation = Tween<double>(begin: 0.3, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _stampAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+    
+    // Configure audio players for sound effects
+    _tickPlayer.setReleaseMode(ReleaseMode.release);
+    _successPlayer.setReleaseMode(ReleaseMode.release);
   }
 
   @override
   void dispose() {
     _tabController.dispose();
     _quantityController.dispose();
+    _stampAnimationController.dispose();
+    _tickPlayer.dispose();
+    _successPlayer.dispose();
     super.dispose();
+  }
+  
+  // Sound effect methods
+  void _playTickSound() {
+    // Use unawaited to avoid blocking UI
+    _tickPlayer.play(AssetSource('sounds/click.wav'), volume: 0.3).catchError((e) {
+      debugPrint('Error playing tick sound: $e');
+    });
+  }
+  
+  void _playChachingSound() {
+    // Use unawaited to avoid blocking UI
+    _successPlayer.play(AssetSource('sounds/success.wav'), volume: 0.7).catchError((e) {
+      debugPrint('Error playing success sound: $e');
+    });
   }
 
   // Calculate price per share based on probability (YES percentage)
@@ -75,6 +129,8 @@ class _BetDetailScreenState extends State<BetDetailScreen> with SingleTickerProv
   }
 
   void _incrementQuantity() {
+    HapticFeedback.selectionClick(); // Tick feeling
+    _playTickSound();
     setState(() {
       _quantity++;
       _quantityController.text = _quantity.toString();
@@ -83,6 +139,8 @@ class _BetDetailScreenState extends State<BetDetailScreen> with SingleTickerProv
 
   void _decrementQuantity() {
     if (_quantity > 1) {
+      HapticFeedback.selectionClick(); // Tick feeling
+      _playTickSound();
       setState(() {
         _quantity--;
         _quantityController.text = _quantity.toString();
@@ -91,9 +149,18 @@ class _BetDetailScreenState extends State<BetDetailScreen> with SingleTickerProv
   }
 
   void _updateQuantityFromText() {
-    final value = int.tryParse(_quantityController.text) ?? 1;
+    final rawValue = int.tryParse(_quantityController.text) ?? 1;
+    // Clamp the value first to get the actual final value
+    final clampedValue = rawValue < 1 ? 1 : (rawValue > 999 ? 999 : rawValue);
+    
+    // Only trigger feedback if the clamped value actually changed
+    if (clampedValue != _quantity) {
+      HapticFeedback.selectionClick(); // Tick feeling
+      _playTickSound();
+    }
+    
     setState(() {
-      _quantity = value < 1 ? 1 : value;
+      _quantity = clampedValue;
       _quantityController.text = _quantity.toString();
     });
   }
@@ -110,7 +177,7 @@ class _BetDetailScreenState extends State<BetDetailScreen> with SingleTickerProv
     final userBalance = userProvider.balance;
 
     return Scaffold(
-      backgroundColor: DesignSystem.backgroundDeep,
+      backgroundColor: const Color(0xFF0F172A), // Deep Slate - Strict color
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -570,7 +637,7 @@ class _BetDetailScreenState extends State<BetDetailScreen> with SingleTickerProv
           // Loading Overlay
           if (_isPlacingBet)
             Container(
-              color: DesignSystem.backgroundDeep.withValues(alpha: 0.9),
+              color: const Color(0xFF0F172A).withValues(alpha: 0.9),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -709,84 +776,42 @@ class _BetDetailScreenState extends State<BetDetailScreen> with SingleTickerProv
         },
       );
 
-      // Success - show dialog
+      // Success - show animated dialog with haptics and sound
+      if (!mounted) return; // Early return if disposed
+      
+      // Trigger haptic feedback (The 'Stamp' feeling)
+      HapticFeedback.heavyImpact();
+      
+      // Play success sound
+      _playChachingSound();
+      
+      // Reset and start stamp animation (with mounted check to prevent crash)
       if (mounted) {
-        await showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            backgroundColor: DesignSystem.surfaceLight,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            title: Row(
-              children: [
-                Icon(
-                  Icons.check_circle,
-                  color: DesignSystem.successGreen,
-                  size: 32,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  'Emir Alındı!',
-                  style: DesignSystem.headingMedium.copyWith(
-                    color: DesignSystem.textHeading,
-                  ),
-                ),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$wagerAmountInt VP $_selectedSide emri başarıyla yerleştirildi.',
-                  style: DesignSystem.bodyLarge,
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: DesignSystem.backgroundDeep,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Tahmini Kazanç:',
-                        style: DesignSystem.bodyMedium,
-                      ),
-                      Text(
-                        '$potentialWin VP',
-                        style: DesignSystem.headingMedium.copyWith(
-                          color: DesignSystem.successGreen,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close dialog
-                  Navigator.pop(context); // Go back to home
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: DesignSystem.successGreen,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Tamam'),
-              ),
-            ],
-          ),
-        );
+        _stampAnimationController.reset();
+        _stampAnimationController.forward();
       }
+      
+      // Check mounted again before showing dialog
+      if (!mounted) return;
+      
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black.withValues(alpha: 0.7),
+        builder: (context) => _SuccessStampDialog(
+          wagerAmount: wagerAmountInt,
+          selectedSide: _selectedSide,
+          potentialWin: potentialWin,
+          stampScaleAnimation: _stampScaleAnimation,
+          stampGlowAnimation: _stampGlowAnimation,
+          onClose: () {
+            if (mounted) {
+              Navigator.pop(context); // Close dialog
+              Navigator.pop(context); // Go back to home
+            }
+          },
+        ),
+      );
     } catch (e) {
       // Error handling
       if (mounted) {
@@ -953,4 +978,241 @@ class _TrendChartPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+/// Animated Success Stamp Dialog with Gamification
+class _SuccessStampDialog extends StatelessWidget {
+  final int wagerAmount;
+  final String selectedSide;
+  final int potentialWin;
+  final Animation<double> stampScaleAnimation;
+  final Animation<double> stampGlowAnimation;
+  final VoidCallback onClose;
+
+  const _SuccessStampDialog({
+    required this.wagerAmount,
+    required this.selectedSide,
+    required this.potentialWin,
+    required this.stampScaleAnimation,
+    required this.stampGlowAnimation,
+    required this.onClose,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(20),
+      child: AnimatedBuilder(
+        // Listen to both animations so the shadow updates properly
+        animation: Listenable.merge([stampScaleAnimation, stampGlowAnimation]),
+        builder: (context, child) {
+          return Transform.scale(
+            scale: stampScaleAnimation.value,
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: DesignSystem.surfaceLight,
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: DesignSystem.border,
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: DesignSystem.successGreen.withValues(
+                      alpha: 0.3 * stampGlowAnimation.value,
+                    ),
+                    blurRadius: 30 * stampGlowAnimation.value,
+                    spreadRadius: 5 * stampGlowAnimation.value,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Massive Glowing Stamp Icon
+                  AnimatedBuilder(
+                    animation: stampGlowAnimation,
+                    builder: (context, child) {
+                      return Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              DesignSystem.successGreen.withValues(
+                                alpha: 0.3 * stampGlowAnimation.value,
+                              ),
+                              DesignSystem.successGreen.withValues(
+                                alpha: 0.1 * stampGlowAnimation.value,
+                              ),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: DesignSystem.successGreen.withValues(
+                                alpha: 0.6 * stampGlowAnimation.value,
+                              ),
+                              blurRadius: 40 * stampGlowAnimation.value,
+                              spreadRadius: 10 * stampGlowAnimation.value,
+                            ),
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 60,
+                          backgroundColor: DesignSystem.successGreen,
+                          child: const Icon(
+                            Icons.check,
+                            size: 64,
+                            color: Colors.white,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Success Text with Neon Glow
+                  Text(
+                    'BAŞARIYLA POZİSYON ALINDI',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      color: DesignSystem.successGreen,
+                      letterSpacing: 1.2,
+                      shadows: [
+                        Shadow(
+                          color: DesignSystem.successGreen.withValues(alpha: 0.8),
+                          blurRadius: 20,
+                          offset: const Offset(0, 0),
+                        ),
+                        Shadow(
+                          color: DesignSystem.successGreen.withValues(alpha: 0.4),
+                          blurRadius: 40,
+                          offset: const Offset(0, 0),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Transaction Details
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: DesignSystem.backgroundDeep,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: DesignSystem.border,
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Emir Tutarı:',
+                              style: DesignSystem.bodyMedium,
+                            ),
+                            Text(
+                              '$wagerAmount VP',
+                              style: DesignSystem.headingSmall.copyWith(
+                                color: DesignSystem.textHeading,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Tahmini Kazanç:',
+                              style: DesignSystem.bodyMedium,
+                            ),
+                            Text(
+                              '$potentialWin VP',
+                              style: DesignSystem.headingMedium.copyWith(
+                                color: DesignSystem.successGreen,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Leaderboard Hype Banner
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: DesignSystem.backgroundDeep,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.amber.withValues(alpha: 0.6),
+                        width: 2,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.emoji_events,
+                          color: Colors.amber,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Bu işlem seni Liderlik Tablosunda üst sıralara taşıyabilir!',
+                            style: DesignSystem.bodyMedium.copyWith(
+                              color: Colors.amber.withValues(alpha: 0.9),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Close Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: onClose,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DesignSystem.successGreen,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 8,
+                      ),
+                      child: const Text(
+                        'TAMAM',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
