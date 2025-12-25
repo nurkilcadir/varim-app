@@ -55,7 +55,7 @@ class MobilePredictionCard extends StatelessWidget {
         color: DesignSystem.surfaceLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: DesignSystem.border,
+          color: Colors.white.withValues(alpha: 0.1), // Subtle white border for crisp separation
           width: 1,
         ),
       ),
@@ -80,7 +80,7 @@ class MobilePredictionCard extends StatelessWidget {
                         color: DesignSystem.backgroundDeep,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(
-                          color: DesignSystem.border,
+                          color: Colors.white.withValues(alpha: 0.1), // Subtle white border
                           width: 1,
                         ),
                       ),

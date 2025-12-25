@@ -104,20 +104,23 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: DesignSystem.border, width: 1),
+          side: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1), // Subtle white border for crisp separation
+            width: 1,
+          ),
         ),
       ),
       
       appBarTheme: const AppBarTheme(
-        backgroundColor: DesignSystem.backgroundDeep,
+        backgroundColor: Color(0xFF000000), // Pure Black - blends with background
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
-          color: DesignSystem.textHeading,
+          color: Colors.white, // Pure white for high contrast
           fontSize: 20,
           fontWeight: FontWeight.w700,
         ),
-        iconTheme: IconThemeData(color: DesignSystem.textHeading),
+        iconTheme: IconThemeData(color: Colors.white),
       ),
       
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -130,8 +133,11 @@ class AppTheme {
         unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w400, fontSize: 12),
       ),
       
-      dividerColor: DesignSystem.border,
-      dividerTheme: const DividerThemeData(color: DesignSystem.border, thickness: 1),
+      dividerColor: Colors.white.withValues(alpha: 0.1), // Subtle white divider
+      dividerTheme: DividerThemeData(
+        color: Colors.white.withValues(alpha: 0.1),
+        thickness: 1,
+      ),
       
       textTheme: GoogleFonts.interTextTheme(
         ThemeData.dark().textTheme.copyWith(
@@ -182,11 +188,17 @@ class AppTheme {
         fillColor: DesignSystem.surfaceLight,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: DesignSystem.border),
+          borderSide: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1), // Subtle white border
+            width: 1,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: DesignSystem.border, width: 1),
+          borderSide: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 1,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -200,7 +212,7 @@ class AppTheme {
         hintStyle: GoogleFonts.inter(color: DesignSystem.textBody, fontSize: 14),
       ),
       
-      iconTheme: const IconThemeData(color: DesignSystem.textBody, size: 24),
+      iconTheme: const IconThemeData(color: Colors.white70, size: 24), // White70 for icons
     );
   }
   

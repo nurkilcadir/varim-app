@@ -28,7 +28,7 @@ class CustomHeader extends StatelessWidget {
         color: DesignSystem.surfaceLight,
         border: Border(
           bottom: BorderSide(
-            color: DesignSystem.border,
+            color: Colors.white.withValues(alpha: 0.1), // Subtle white border
             width: 1,
           ),
         ),

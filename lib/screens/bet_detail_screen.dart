@@ -177,7 +177,7 @@ class _BetDetailScreenState extends State<BetDetailScreen> with TickerProviderSt
     final userBalance = userProvider.balance;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F172A), // Deep Slate - Strict color
+      backgroundColor: DesignSystem.backgroundDeep, // Pure Black
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -644,7 +644,7 @@ class _BetDetailScreenState extends State<BetDetailScreen> with TickerProviderSt
           // Loading Overlay
           if (_isPlacingBet)
             Container(
-              color: const Color(0xFF0F172A).withValues(alpha: 0.9),
+              color: DesignSystem.backgroundDeep.withValues(alpha: 0.9),
               child: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,

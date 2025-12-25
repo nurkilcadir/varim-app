@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 
-/// Modern Slate & Neon Design System
-/// Source of Truth for all colors and styling across the app
+/// True Black / High-Contrast Dark Design System
+/// Pro Trading App Theme (StableX/Binance Style)
 class DesignSystem {
-  // Core Colors
-  static const Color backgroundDeep = Color(0xFF0F172A); // Deep Slate
-  static const Color surfaceLight = Color(0xFF1E293B); // Lighter Slate
-  static const Color primaryAccent = Color(0xFF3B82F6); // Electric Blue
-  static const Color successGreen = Color(0xFF10B981); // Neon Emerald
-  static const Color errorRose = Color(0xFFF43F5E); // Neon Rose
-  static const Color textHeading = Color(0xFFF8FAFC); // Off-White
-  static const Color textBody = Color(0xFF94A3B8); // Slate Grey
-  static const Color border = Color(0xFF334155); // Subtle Slate
-  static const Color unselectedItem = Color(0xFF64748B); // Nav unselected
+  // Core Colors - True Black Theme
+  static const Color backgroundDeep = Color(0xFF000000); // Pure Black
+  static const Color surfaceLight = Color(0xFF141414); // Dark Grey (Apple Dark)
+  static const Color primaryAccent = Color(0xFF3B82F6); // Electric Blue (unchanged)
+  static const Color successGreen = Color(0xFF10B981); // Neon Emerald (unchanged)
+  static const Color errorRose = Color(0xFFF43F5E); // Neon Rose (unchanged)
+  static const Color textHeading = Color(0xFFFFFFFF); // Pure White
+  static const Color textBody = Color(0xFFB0B0B0); // White70 equivalent
+  static const Color border = Color(0x1AFFFFFF); // White 10% opacity (subtle border)
+  static const Color unselectedItem = Color(0xFF808080); // Medium Grey
 
   // Semantic Colors
   static const Color profit = successGreen;
@@ -82,12 +82,12 @@ class DesignSystem {
         fontWeight: FontWeight.w400,
       );
 
-  // Card Decoration
+  // Card Decoration - High Contrast with Subtle Borders
   static BoxDecoration get cardDecoration => BoxDecoration(
         color: surfaceLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: border,
+          color: Colors.white.withValues(alpha: 0.1), // Subtle white border for crisp separation
           width: 1,
         ),
       );
@@ -96,12 +96,12 @@ class DesignSystem {
         color: surfaceLight,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: primaryAccent.withValues(alpha: 0.3),
+          color: Colors.white.withValues(alpha: 0.1), // Subtle white border
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: primaryAccent.withValues(alpha: 0.1),
+            color: primaryAccent.withValues(alpha: 0.2),
             blurRadius: 12,
             spreadRadius: 2,
           ),
