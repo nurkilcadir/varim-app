@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:varim_app/widgets/custom_header.dart';
@@ -458,6 +459,10 @@ class _AdminScreenState extends State<AdminScreen>
   Future<void> _loadDemoData(BuildContext context, ThemeData theme, VarimColors varimColors) async {
     try {
       final batch = FirebaseFirestore.instance.batch();
+      final random = Random();
+      
+      // Helper function to generate random volume between 15,000 and 85,000
+      int generateRandomVolume() => 15000 + random.nextInt(70001); // 15000 to 85000
       
       // Demo events data
       final demoEvents = [
@@ -471,10 +476,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'Kızılcık Şerbeti dizisinin bu hafta yayınlanacak bölümüne göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 7))),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.55,
           'yokumPercentage': 0.45,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         {
           'title': 'Survivor All-Star 2026 kadrosunda Turabi olacak mı?',
@@ -485,10 +490,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'Survivor All-Star 2026 resmi kadro açıklamasına göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 30))),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.40,
           'yokumPercentage': 0.60,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         {
           'title': 'Reynmen yeni şarkısıyla Youtube Trendlerde 1. sıraya yerleşecek mi?',
@@ -499,10 +504,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'Youtube Türkiye Trendler listesinde 1. sıraya yerleşmesine göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 14))),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.50,
           'yokumPercentage': 0.50,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         // GÜNDEM
         {
@@ -514,10 +519,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'İstanbul\'da 1 Ocak 2026 tarihinden önce kaydedilen resmi kar yağışına göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime(2025, 12, 31, 23, 59)),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.35,
           'yokumPercentage': 0.65,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         {
           'title': 'Apple, yeni iPhone lansmanını bu ay duyuracak mı?',
@@ -528,10 +533,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'Apple\'ın resmi duyurusuna göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 31))),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.60,
           'yokumPercentage': 0.40,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         {
           'title': 'NASA\'nın yeni Mars görevi 2026\'da başlayacak mı?',
@@ -542,10 +547,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'NASA\'nın resmi açıklamalarına göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime(2026, 1, 1, 0, 0)),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.52,
           'yokumPercentage': 0.48,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         // SPOR
         {
@@ -557,10 +562,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'Maç süresince verilen kırmızı kart sayısına göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 14))),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.70,
           'yokumPercentage': 0.30,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         {
           'title': 'Arda Güler, Real Madrid maçında gol atacak mı?',
@@ -571,10 +576,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'Arda Güler\'in maç süresince attığı gol sayısına göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 7))),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.30,
           'yokumPercentage': 0.70,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         // KRİPTO
         {
@@ -586,10 +591,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'Binance BTC/USDT fiyatına göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(hours: 12))),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.45,
           'yokumPercentage': 0.55,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         {
           'title': 'Dogecoin (DOGE) Elon Musk tweeti sonrası %10 yükselir mi?',
@@ -600,10 +605,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'Tweet sonrası 24 saat içindeki fiyat değişimine göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 1))),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.40,
           'yokumPercentage': 0.60,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         // E-SPOR
         {
@@ -615,10 +620,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'Valorant Champions final maç sonucuna göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 21))),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.62,
           'yokumPercentage': 0.38,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         {
           'title': 'Faker, LoL Worlds finalinde MVP seçilecek mi?',
@@ -629,10 +634,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'LoL Worlds final maç MVP seçimine göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 45))),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.51,
           'yokumPercentage': 0.49,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         // EKONOMİ
         {
@@ -644,10 +649,10 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'Hafta sonu kapanış kuruna göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 7))),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.57,
           'yokumPercentage': 0.43,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
         },
         // CANLI
         {
@@ -659,16 +664,20 @@ class _AdminScreenState extends State<AdminScreen>
           'rule': 'Maç sonu toplam sayıya göre belirlenecektir.',
           'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(hours: 2))),
           'status': 'active',
-          'volume': 0,
+          'volume': generateRandomVolume(),
           'varimPercentage': 0.50,
           'yokumPercentage': 0.50,
-          'poolSize': 0,
+          'poolSize': 0, // Will be set to volume below
           'isLive': true,
         },
       ];
 
-      // Add all events to batch
+      // Add all events to batch with randomized volumes and matching poolSize
       for (var eventData in demoEvents) {
+        // Ensure poolSize matches volume
+        final volume = eventData['volume'] as int;
+        eventData['poolSize'] = volume;
+        
         final docRef = FirebaseFirestore.instance.collection('events').doc();
         batch.set(docRef, eventData);
       }

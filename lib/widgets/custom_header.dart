@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:varim_app/theme/app_theme.dart';
 import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/providers/user_provider.dart';
+import 'package:varim_app/screens/store_screen.dart';
 
 /// Custom header with V logo and user VP badge
 /// Shows real-time balance from UserProvider
@@ -68,6 +69,77 @@ class CustomHeader extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+          
+          // Daily Streak Button & Store Button
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Daily Streak Button
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _showStreakDialog(context, theme, varimColors),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Colors.orange.withValues(alpha: 0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.local_fire_department,
+                          color: Colors.orange,
+                          size: 18,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          '5',
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              
+              // Store Button (Wallet Icon)
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _navigateToStore(context),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: DesignSystem.primaryAccent.withValues(alpha: 0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: DesignSystem.primaryAccent.withValues(alpha: 0.5),
+                        width: 1,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.account_balance_wallet,
+                      color: DesignSystem.primaryAccent,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
           // User Avatar and VP Badge with real-time balance from Provider
           if (userProvider.currentUser != null)
@@ -193,5 +265,59 @@ class CustomHeader extends StatelessWidget {
       return '${(vp / 1000).toStringAsFixed(1)}K';
     }
     return vp.toString();
+  }
+
+  void _showStreakDialog(BuildContext context, ThemeData theme, VarimColors varimColors) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: DesignSystem.surfaceLight,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: Row(
+          children: [
+            const Icon(
+              Icons.local_fire_department,
+              color: Colors.orange,
+              size: 32,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Günlük Seri',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          '5 Gündür serin devam ediyor! Yarın gel 500 VP kap.',
+          style: theme.textTheme.bodyLarge,
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text('Tamam'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToStore(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const StoreScreen(),
+      ),
+    );
   }
 }

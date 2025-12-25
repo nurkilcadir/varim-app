@@ -195,6 +195,13 @@ class _BetDetailScreenState extends State<BetDetailScreen> with TickerProviderSt
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: () => _showShareDialog(context),
+            color: DesignSystem.textHeading,
+          ),
+        ],
       ),
       body: Stack(
         children: [
@@ -834,6 +841,343 @@ class _BetDetailScreenState extends State<BetDetailScreen> with TickerProviderSt
         });
       }
     }
+  }
+
+  void _showShareDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    final isVarim = _selectedSide == 'VARIM';
+    
+    showDialog(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.8),
+      builder: (context) => _SharePreviewDialog(
+        eventTitle: widget.event.title,
+        selectedSide: _selectedSide,
+        isVarim: isVarim,
+        theme: theme,
+        onInstagramTap: () {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Görsel Kopyalandı'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        },
+        onTwitterTap: () {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Görsel Kopyalandı'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Instagram Story-style share preview dialog
+class _SharePreviewDialog extends StatelessWidget {
+  final String eventTitle;
+  final String selectedSide;
+  final bool isVarim;
+  final ThemeData theme;
+  final VoidCallback onInstagramTap;
+  final VoidCallback onTwitterTap;
+
+  const _SharePreviewDialog({
+    required this.eventTitle,
+    required this.selectedSide,
+    required this.isVarim,
+    required this.theme,
+    required this.onInstagramTap,
+    required this.onTwitterTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final cardWidth = screenSize.width * 0.85;
+    final cardHeight = cardWidth * 1.25; // 4:5 aspect ratio
+
+    // Gradient colors based on selected side
+    final gradientColors = isVarim
+        ? [
+            Colors.green.shade900,
+            Colors.black,
+          ]
+        : [
+            Colors.red.shade900,
+            Colors.black,
+          ];
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 40),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Close button (top right)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.close, color: Colors.white, size: 20),
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Part A: The Preview Card
+            Container(
+              width: cardWidth,
+              height: cardHeight,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: gradientColors,
+                ),
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 30,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: Stack(
+                children: [
+                  // Content
+                  Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Top: App Logo + Name
+                        Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Text(
+                                'V',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -1,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            const Text(
+                              'VARIM',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        // Middle: The Ticket (Glassmorphism Card)
+                        Expanded(
+                          child: Center(
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(20),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.95),
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.3),
+                                    blurRadius: 15,
+                                    spreadRadius: 2,
+                                  ),
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  // Event Title
+                                  Text(
+                                    eventTitle,
+                                    textAlign: TextAlign.center,
+                                    maxLines: 3,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 24),
+
+                                  // Rotated Stamp
+                                  Transform.rotate(
+                                    angle: -0.2, // Slight rotation
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 24,
+                                        vertical: 16,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.transparent,
+                                        border: Border.all(
+                                          color: isVarim
+                                              ? DesignSystem.successGreen
+                                              : DesignSystem.errorRose,
+                                          width: 3,
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        isVarim ? 'LONG 🚀' : 'SHORT 📉',
+                                        style: TextStyle(
+                                          color: isVarim
+                                              ? DesignSystem.successGreen
+                                              : DesignSystem.errorRose,
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w900,
+                                          letterSpacing: 2,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Bottom: Footer Text
+                        Text(
+                          'Ben Pozisyonumu Aldım! Sen de gel.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.95),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            fontStyle: FontStyle.italic,
+                            letterSpacing: 0.5,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.5),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Part B: Action Buttons (Outside the Card)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Instagram Button
+                ElevatedButton.icon(
+                  onPressed: onInstagramTap,
+                  icon: Icon(
+                    Icons.camera_alt,
+                    size: 20,
+                    color: isVarim
+                        ? DesignSystem.successGreen
+                        : DesignSystem.errorRose,
+                  ),
+                  label: Text(
+                    'Instagram',
+                    style: TextStyle(
+                      color: isVarim
+                          ? DesignSystem.successGreen
+                          : DesignSystem.errorRose,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isVarim
+                            ? DesignSystem.successGreen
+                            : DesignSystem.errorRose,
+                        width: 2,
+                      ),
+                    ),
+                    elevation: 8,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Twitter Button
+                ElevatedButton.icon(
+                  onPressed: onTwitterTap,
+                  icon: Icon(
+                    Icons.alternate_email,
+                    size: 20,
+                    color: isVarim
+                        ? DesignSystem.successGreen
+                        : DesignSystem.errorRose,
+                  ),
+                  label: Text(
+                    'Twitter',
+                    style: TextStyle(
+                      color: isVarim
+                          ? DesignSystem.successGreen
+                          : DesignSystem.errorRose,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(
+                        color: isVarim
+                            ? DesignSystem.successGreen
+                            : DesignSystem.errorRose,
+                        width: 2,
+                      ),
+                    ),
+                    elevation: 8,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
   }
 }
 

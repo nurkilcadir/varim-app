@@ -402,6 +402,8 @@ class _HomeScreenState extends State<HomeScreen> {
             varimPercentage: event.varimPercentage,
             yokumPercentage: event.yokumPercentage,
             poolSize: event.poolSize,
+            volume: event.volume,
+            yesRatio: event.yesRatio,
             onCardTap: () {
               Navigator.push(
                 context,
