@@ -48,7 +48,7 @@ class _AdminScreenState extends State<AdminScreen>
 
               // Title
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
                     Icon(
@@ -57,12 +57,34 @@ class _AdminScreenState extends State<AdminScreen>
                       size: 28,
                     ),
                     const SizedBox(width: 12),
-                    Text(
-                      'Yönetici Paneli',
-                      style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.w900,
-                            color: theme.colorScheme.onSurface,
-                          ),
+                    Expanded(
+                      child: Text(
+                        'Yönetici Paneli',
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                      ),
+                    ),
+                    // Demo Data Button
+                    ElevatedButton.icon(
+                      onPressed: () => _loadDemoData(context, theme, varimColors),
+                      icon: const Icon(Icons.cloud_download, size: 18),
+                      label: const Text(
+                        'DEMO VERİLERİNİ YÜKLE',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: varimColors.varimColor,
+                        foregroundColor: theme.colorScheme.onPrimary,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -179,6 +201,17 @@ class _AdminScreenState extends State<AdminScreen>
                           Text(
                             'Aktif etkinlik yok',
                             style: theme.textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            onPressed: () => _loadDemoData(context, theme, varimColors),
+                            icon: const Icon(Icons.cloud_download),
+                            label: const Text('DEMO VERİLERİNİ YÜKLE'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: varimColors.varimColor,
+                              foregroundColor: theme.colorScheme.onPrimary,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
                           ),
                         ],
                       ),
@@ -418,6 +451,250 @@ class _AdminScreenState extends State<AdminScreen>
           ),
         );
       }
+    }
+  }
+
+  /// Load demo data into Firestore
+  Future<void> _loadDemoData(BuildContext context, ThemeData theme, VarimColors varimColors) async {
+    try {
+      final batch = FirebaseFirestore.instance.batch();
+      
+      // Demo events data
+      final demoEvents = [
+        // TV & MAGAZİN
+        {
+          'title': 'Kızılcık Şerbeti\'nde bu hafta Apo karakteri ölecek mi?',
+          'category': 'TV & Magazin',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=TV+Magazin',
+          'yesRatio': 1.75,
+          'noRatio': 2.10,
+          'rule': 'Kızılcık Şerbeti dizisinin bu hafta yayınlanacak bölümüne göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 7))),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.55,
+          'yokumPercentage': 0.45,
+          'poolSize': 0,
+        },
+        {
+          'title': 'Survivor All-Star 2026 kadrosunda Turabi olacak mı?',
+          'category': 'TV & Magazin',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=Survivor',
+          'yesRatio': 2.20,
+          'noRatio': 1.65,
+          'rule': 'Survivor All-Star 2026 resmi kadro açıklamasına göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 30))),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.40,
+          'yokumPercentage': 0.60,
+          'poolSize': 0,
+        },
+        {
+          'title': 'Reynmen yeni şarkısıyla Youtube Trendlerde 1. sıraya yerleşecek mi?',
+          'category': 'TV & Magazin',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=Reynmen',
+          'yesRatio': 1.90,
+          'noRatio': 1.85,
+          'rule': 'Youtube Türkiye Trendler listesinde 1. sıraya yerleşmesine göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 14))),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.50,
+          'yokumPercentage': 0.50,
+          'poolSize': 0,
+        },
+        // GÜNDEM
+        {
+          'title': 'İstanbul\'a 1 Ocak tarihinden önce kar yağacak mı?',
+          'category': 'Gündem',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=İstanbul+Kar',
+          'yesRatio': 2.50,
+          'noRatio': 1.55,
+          'rule': 'İstanbul\'da 1 Ocak 2026 tarihinden önce kaydedilen resmi kar yağışına göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime(2025, 12, 31, 23, 59)),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.35,
+          'yokumPercentage': 0.65,
+          'poolSize': 0,
+        },
+        {
+          'title': 'Apple, yeni iPhone lansmanını bu ay duyuracak mı?',
+          'category': 'Gündem',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=Apple+iPhone',
+          'yesRatio': 1.65,
+          'noRatio': 2.25,
+          'rule': 'Apple\'ın resmi duyurusuna göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 31))),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.60,
+          'yokumPercentage': 0.40,
+          'poolSize': 0,
+        },
+        {
+          'title': 'NASA\'nın yeni Mars görevi 2026\'da başlayacak mı?',
+          'category': 'Gündem',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=NASA+Mars',
+          'yesRatio': 1.80,
+          'noRatio': 1.95,
+          'rule': 'NASA\'nın resmi açıklamalarına göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime(2026, 1, 1, 0, 0)),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.52,
+          'yokumPercentage': 0.48,
+          'poolSize': 0,
+        },
+        // SPOR
+        {
+          'title': 'Fenerbahçe - Galatasaray derbisinde Kırmızı Kart çıkar mı?',
+          'category': 'Spor',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=Derbi',
+          'yesRatio': 1.45,
+          'noRatio': 2.80,
+          'rule': 'Maç süresince verilen kırmızı kart sayısına göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 14))),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.70,
+          'yokumPercentage': 0.30,
+          'poolSize': 0,
+        },
+        {
+          'title': 'Arda Güler, Real Madrid maçında gol atacak mı?',
+          'category': 'Spor',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=Arda+Güler',
+          'yesRatio': 3.00,
+          'noRatio': 1.40,
+          'rule': 'Arda Güler\'in maç süresince attığı gol sayısına göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 7))),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.30,
+          'yokumPercentage': 0.70,
+          'poolSize': 0,
+        },
+        // KRİPTO
+        {
+          'title': 'Bitcoin (BTC) bu gece 03:00\'e kadar 98.000\$ seviyesini geçer mi?',
+          'category': 'Kripto',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=Bitcoin',
+          'yesRatio': 2.10,
+          'noRatio': 1.75,
+          'rule': 'Binance BTC/USDT fiyatına göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(hours: 12))),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.45,
+          'yokumPercentage': 0.55,
+          'poolSize': 0,
+        },
+        {
+          'title': 'Dogecoin (DOGE) Elon Musk tweeti sonrası %10 yükselir mi?',
+          'category': 'Kripto',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=Dogecoin',
+          'yesRatio': 2.50,
+          'noRatio': 1.55,
+          'rule': 'Tweet sonrası 24 saat içindeki fiyat değişimine göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 1))),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.40,
+          'yokumPercentage': 0.60,
+          'poolSize': 0,
+        },
+        // E-SPOR
+        {
+          'title': 'Valorant Champions finalini Fnatic kazanacak mı?',
+          'category': 'E-Spor',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=Valorant',
+          'yesRatio': 1.60,
+          'noRatio': 2.40,
+          'rule': 'Valorant Champions final maç sonucuna göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 21))),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.62,
+          'yokumPercentage': 0.38,
+          'poolSize': 0,
+        },
+        {
+          'title': 'Faker, LoL Worlds finalinde MVP seçilecek mi?',
+          'category': 'E-Spor',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=Faker',
+          'yesRatio': 1.85,
+          'noRatio': 1.90,
+          'rule': 'LoL Worlds final maç MVP seçimine göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 45))),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.51,
+          'yokumPercentage': 0.49,
+          'poolSize': 0,
+        },
+        // EKONOMİ
+        {
+          'title': 'Dolar/TL kuru haftayı 36.00 üzerinde kapatacak mı?',
+          'category': 'Ekonomi',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=Dolar+TL',
+          'yesRatio': 1.70,
+          'noRatio': 2.10,
+          'rule': 'Hafta sonu kapanış kuruna göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(days: 7))),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.57,
+          'yokumPercentage': 0.43,
+          'poolSize': 0,
+        },
+        // CANLI
+        {
+          'title': 'CANLI: Şu an oynanan Lakers maçında toplam sayı 220\'yi geçer mi?',
+          'category': 'Canlı',
+          'imageUrl': 'https://via.placeholder.com/400x200?text=Lakers',
+          'yesRatio': 1.90,
+          'noRatio': 1.85,
+          'rule': 'Maç sonu toplam sayıya göre belirlenecektir.',
+          'endDate': Timestamp.fromDate(DateTime.now().add(const Duration(hours: 2))),
+          'status': 'active',
+          'volume': 0,
+          'varimPercentage': 0.50,
+          'yokumPercentage': 0.50,
+          'poolSize': 0,
+          'isLive': true,
+        },
+      ];
+
+      // Add all events to batch
+      for (var eventData in demoEvents) {
+        final docRef = FirebaseFirestore.instance.collection('events').doc();
+        batch.set(docRef, eventData);
+      }
+
+      // Commit batch
+      await batch.commit();
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${demoEvents.length} demo etkinlik başarıyla yüklendi!'),
+          backgroundColor: varimColors.varimColor,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Hata: ${e.toString()}'),
+          backgroundColor: varimColors.yokumColor,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
     }
   }
 }

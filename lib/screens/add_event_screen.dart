@@ -27,10 +27,10 @@ class _AddEventScreenState extends State<AddEventScreen> {
   final List<String> _categories = [
     'Spor',
     'Ekonomi',
-    'Magazin',
+    'TV & Magazin',
     'Kripto',
     'E-Spor',
-    'Dünya',
+    'Gündem',
   ];
 
   @override

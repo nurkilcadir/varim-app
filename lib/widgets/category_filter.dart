@@ -50,8 +50,8 @@ class _CategoryFilterState extends State<CategoryFilter> {
       glowColor: Color(0xFF00FF94), // Green
     ),
     Category(
-      id: 'magazin',
-      label: 'Magazin',
+      id: 'tv_magazin',
+      label: 'TV & Magazin',
       icon: Icons.tv,
       glowColor: Color(0xFFFF0055), // Pink
     ),

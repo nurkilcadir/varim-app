@@ -25,9 +25,9 @@ class _HomeScreenState extends State<HomeScreen> {
     {'label': 'Spor', 'icon': Icons.sports_soccer},
     {'label': 'Kripto', 'icon': Icons.rocket_launch},
     {'label': 'Ekonomi', 'icon': Icons.attach_money},
-    {'label': 'Magazin', 'icon': Icons.tv},
+    {'label': 'TV & Magazin', 'icon': Icons.tv},
     {'label': 'E-Spor', 'icon': Icons.gamepad},
-    {'label': 'Dünya', 'icon': Icons.public},
+    {'label': 'Gündem', 'icon': Icons.public},
   ];
 
   final Map<String, Map<String, String>> _sortOptions = {
