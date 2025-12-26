@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:varim_app/theme/app_theme.dart';
 import 'package:varim_app/theme/design_system.dart';
 import 'package:varim_app/providers/user_provider.dart';
 import 'package:varim_app/models/event_model.dart';
+import 'package:varim_app/services/bet_service.dart';
 
 /// Trading terminal style betting screen
 class BetDetailScreen extends StatefulWidget {
@@ -38,6 +38,9 @@ class _BetDetailScreenState extends State<BetDetailScreen> with TickerProviderSt
   // Audio players for sound effects
   final AudioPlayer _tickPlayer = AudioPlayer();
   final AudioPlayer _successPlayer = AudioPlayer();
+  
+  // Bet service for transaction-based betting
+  final BetService _betService = BetService();
 
   @override
   void initState() {
@@ -723,65 +726,25 @@ class _BetDetailScreenState extends State<BetDetailScreen> with TickerProviderSt
     });
 
     try {
-      // Use the event ID from the EventModel
-      final eventId = widget.event.id;
-      final choice = isVarim ? 'VARIM' : 'YOKUM';
-      
-      // Get the current odds for the selected choice
-      final currentOdds = isVarim ? widget.event.yesRatio : widget.event.noRatio;
-      
-      // Calculate potential win: amount * odds
-      final potentialWin = (wagerAmountInt * currentOdds).toInt();
-
-      // Run Firestore transaction
-      await FirebaseFirestore.instance.runTransaction(
-        (Transaction transaction) async {
-          // Step 1: Read the latest user document
-          final userDocRef = FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid);
-          final userDoc = await transaction.get(userDocRef);
-
-          if (!userDoc.exists) {
-            throw Exception('Kullanıcı belgesi bulunamadı');
-          }
-
-          final currentBalance = (userDoc.data()?['balance'] as num?)?.toInt() ?? 0;
-
-          // Step 2: Double-check balance
-          if (currentBalance < wagerAmountInt) {
-            throw Exception('Yetersiz bakiye! Mevcut bakiye: $currentBalance VP');
-          }
-
-          // Step 3: Deduct balance using FieldValue.increment
-          transaction.update(
-            userDocRef,
-            {'balance': FieldValue.increment(-wagerAmountInt)},
-          );
-
-          // Step 4: Create bet document in users/{uid}/bets/ subcollection
-          final betDocRef = userDocRef
-              .collection('bets')
-              .doc(); // Auto-generate document ID
-
-          transaction.set(
-            betDocRef,
-            {
-              'eventId': eventId,
-              'eventTitle': widget.event.title,
-              'choice': choice,
-              'amount': wagerAmountInt,
-              'odds': currentOdds, // Save the odds at the time of bet
-              'potentialWin': potentialWin, // Save calculated potential win (amount * odds)
-              'timestamp': FieldValue.serverTimestamp(),
-              'status': 'active',
-              'varimPercentage': widget.event.varimPercentage,
-              'yokumPercentage': widget.event.yokumPercentage,
-              'poolSize': widget.event.poolSize,
-            },
-          );
-        },
+      // Use BetService to place bet with transaction
+      final result = await _betService.placeBet(
+        eventId: widget.event.id,
+        eventTitle: widget.event.title,
+        isVarim: isVarim,
+        betAmount: wagerAmountInt,
       );
+
+      // Check if bet was successful
+      if (!result['success']) {
+        final errorMessage = result['error'] ?? 'Bahis yerleştirilemedi';
+        throw Exception(errorMessage);
+      }
+
+      // Get updated values from result
+      final potentialWin = result['potentialWin'] as int? ?? wagerAmountInt;
+      
+      // Note: UserProvider will automatically update via stream listener
+      // No need to manually call updateBalance
 
       // Success - show animated dialog with haptics and sound
       if (!mounted) return; // Early return if disposed

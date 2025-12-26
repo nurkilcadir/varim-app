@@ -48,6 +48,11 @@ dependencies:
   
   # Audio playback for sound effects
   audioplayers: ^6.0.0
+  
+  # Image picker and Firebase Storage
+  image_picker: ^1.1.2
+  firebase_storage: ^12.3.4
+  image: ^4.3.0  # For image compression and resizing
 
 dev_dependencies:
   flutter_test:

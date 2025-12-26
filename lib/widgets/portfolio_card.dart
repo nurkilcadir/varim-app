@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:varim_app/theme/app_theme.dart';
+import 'package:varim_app/theme/design_system.dart';
 
-/// Portfolio card showing bet information
+/// Portfolio card showing bet information with live event data
 class PortfolioCard extends StatelessWidget {
   final String title;
   final String position; // 'VARIM' or 'YOKUM'
   final double invested;
   final double potentialWin;
-  final double? currentOdds;
+  final String? eventId; // Required for live data
+  final double? entryRatio; // Entry probability (from position document)
   final bool isHistory;
   final String? result; // 'Won' or 'Lost' for history
   final VoidCallback? onTap;
@@ -18,7 +21,8 @@ class PortfolioCard extends StatelessWidget {
     required this.position,
     required this.invested,
     required this.potentialWin,
-    this.currentOdds,
+    this.eventId,
+    this.entryRatio,
     this.isHistory = false,
     this.result,
     this.onTap,
@@ -32,6 +36,89 @@ class PortfolioCard extends StatelessWidget {
     final positionColor = isVarim ? varimColors.varimColor : varimColors.yokumColor;
     final textColor = isVarim ? Colors.black : Colors.white;
 
+    // For active bets, wrap in StreamBuilder to get live event data
+    if (!isHistory && eventId != null) {
+      return StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('events')
+            .doc(eventId)
+            .snapshots(),
+        builder: (context, eventSnapshot) {
+          // Get live event data
+          double? liveYesRatio;
+          double? liveNoRatio;
+          
+          if (eventSnapshot.hasData && eventSnapshot.data!.exists) {
+            final eventData = eventSnapshot.data!.data() as Map<String, dynamic>?;
+            liveYesRatio = (eventData?['yesRatio'] as num?)?.toDouble();
+            liveNoRatio = (eventData?['noRatio'] as num?)?.toDouble();
+            
+            // If noRatio is not set, calculate it from yesRatio
+            if (liveNoRatio == null && liveYesRatio != null) {
+              liveNoRatio = 1.0 - liveYesRatio;
+            }
+          }
+
+          // Calculate current probability based on bet side
+          final currentRatio = isVarim ? liveYesRatio : liveNoRatio;
+          
+          return _buildCardContent(
+            context,
+            theme,
+            varimColors,
+            isVarim,
+            positionColor,
+            textColor,
+            currentRatio,
+          );
+        },
+      );
+    }
+
+    // For history bets, show static content
+    return _buildCardContent(
+      context,
+      theme,
+      varimColors,
+      isVarim,
+      positionColor,
+      textColor,
+      null,
+    );
+  }
+
+  Widget _buildCardContent(
+    BuildContext context,
+    ThemeData theme,
+    VarimColors varimColors,
+    bool isVarim,
+    Color positionColor,
+    Color textColor,
+    double? currentRatio,
+  ) {
+    // Calculate entry percentage
+    final entryPercentage = entryRatio != null ? (entryRatio! * 100) : null;
+    
+    // Calculate current percentage
+    final currentPercentage = currentRatio != null ? (currentRatio * 100) : null;
+
+    // Determine color for footer bar based on profit/loss
+    // Logic: If current probability is higher than entry, it's profit (green)
+    // If current probability is lower than entry, it's loss (red)
+    Color footerTextColor = DesignSystem.textBody; // Default to grey
+    if (currentPercentage != null && entryPercentage != null) {
+      if (currentPercentage > entryPercentage) {
+        // Current probability is higher → Profit (Green)
+        footerTextColor = DesignSystem.successGreen;
+      } else if (currentPercentage < entryPercentage) {
+        // Current probability is lower → Loss (Red)
+        footerTextColor = DesignSystem.errorRose;
+      } else {
+        // Equal → Neutral (Grey)
+        footerTextColor = DesignSystem.textBody;
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Material(
@@ -42,10 +129,10 @@ class PortfolioCard extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainer,
+              color: DesignSystem.surfaceLight,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+                color: Colors.white.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
@@ -61,7 +148,7 @@ class PortfolioCard extends StatelessWidget {
                         title,
                         style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
-                              color: theme.colorScheme.onSurface,
+                              color: DesignSystem.textHeading,
                               height: 1.3,
                             ),
                         maxLines: 2,
@@ -112,7 +199,7 @@ class PortfolioCard extends StatelessWidget {
                           Text(
                             'Yatırılan',
                             style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
+                                  color: DesignSystem.textBody,
                                   fontSize: 11,
                                 ),
                           ),
@@ -120,7 +207,7 @@ class PortfolioCard extends StatelessWidget {
                           Text(
                             '${invested.toStringAsFixed(0)} VP',
                             style: theme.textTheme.titleSmall?.copyWith(
-                                  color: theme.colorScheme.onSurface,
+                                  color: DesignSystem.textHeading,
                                   fontWeight: FontWeight.w700,
                                 ),
                           ),
@@ -137,7 +224,7 @@ class PortfolioCard extends StatelessWidget {
                                 ? (result == 'Won' ? 'Kazanç' : 'Kayıp')
                                 : 'Potansiyel Kazanç',
                             style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.onSurfaceVariant,
+                                  color: DesignSystem.textBody,
                                   fontSize: 11,
                                 ),
                           ),
@@ -159,28 +246,51 @@ class PortfolioCard extends StatelessWidget {
                   ],
                 ),
 
-                // Current Odds (for active bets)
-                if (!isHistory && currentOdds != null) ...[
+                // Footer Bar (ALWAYS show for active bets)
+                if (!isHistory) ...[
                   const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      color: DesignSystem.backgroundDeep,
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.1),
+                        width: 1,
+                      ),
                     ),
                     child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(
-                          Icons.trending_up,
-                          size: 14,
-                          color: theme.colorScheme.onSurfaceVariant,
+                        // Left: Entry Ratio
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.trending_up,
+                              size: 14,
+                              color: DesignSystem.textBody,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              entryPercentage != null
+                                  ? 'Giriş Oranı: ${entryPercentage.toStringAsFixed(0)}%'
+                                  : 'Giriş Oranı: --',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                    color: DesignSystem.textBody,
+                                    fontSize: 11,
+                                  ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 6),
+                        // Right: Current Ratio
                         Text(
-                          'Güncel Oran: ${(currentOdds! * 100).toStringAsFixed(0)}%',
+                          currentPercentage != null
+                              ? 'Güncel: ${currentPercentage.toStringAsFixed(0)}%'
+                              : 'Güncel: --',
                           style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant,
+                                color: footerTextColor,
                                 fontSize: 11,
+                                fontWeight: FontWeight.w600,
                               ),
                         ),
                       ],

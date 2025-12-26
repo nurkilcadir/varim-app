@@ -257,18 +257,22 @@ class _PortfolioScreenState extends State<PortfolioScreen>
               final doc = bets[index];
               final data = doc.data() as Map<String, dynamic>;
               
+              final eventId = data['eventId'] as String?;
               final eventTitle = data['eventTitle'] as String? ?? 'Bilinmeyen Etkinlik';
               final choice = data['choice'] as String? ?? 'VARIM';
               final amount = (data['amount'] as num?)?.toDouble() ?? 0.0;
               final potentialWin = (data['potentialWin'] as num?)?.toDouble() ?? 0.0;
-              final varimPercentage = (data['varimPercentage'] as num?)?.toDouble();
+              
+              // Get entry ratio from odds field (stored as probability)
+              final entryRatio = (data['odds'] as num?)?.toDouble();
 
               return PortfolioCard(
                 title: eventTitle,
                 position: choice,
                 invested: amount,
                 potentialWin: potentialWin,
-                currentOdds: varimPercentage,
+                eventId: eventId, // Required for live stream
+                entryRatio: entryRatio, // Entry probability at betting time
                 onTap: () {
                   // TODO: Navigate to bet details
                 },

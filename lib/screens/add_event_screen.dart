@@ -88,8 +88,31 @@ class _AddEventScreenState extends State<AddEventScreen> {
     );
   }
 
+  bool _isValidImageUrl(String url) {
+    if (url.trim().isEmpty) return false;
+    try {
+      final uri = Uri.parse(url);
+      return uri.hasScheme && (uri.scheme == 'http' || uri.scheme == 'https');
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<void> _submitEvent() async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // Validate image URL
+    final imageUrl = _imageUrlController.text.trim();
+    if (imageUrl.isEmpty || !_isValidImageUrl(imageUrl)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Lütfen geçerli bir görsel URL\'si girin'),
+          backgroundColor: AppTheme.varimColors(context).yokumColor,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
     }
 
@@ -99,28 +122,43 @@ class _AddEventScreenState extends State<AddEventScreen> {
 
     try {
       final title = _titleController.text.trim();
-      final imageUrl = _imageUrlController.text.trim();
-      final yesRatio = double.tryParse(_yesRatioController.text) ?? 1.85;
-      final noRatio = double.tryParse(_noRatioController.text) ?? 1.85;
       final rule = _ruleController.text.trim();
-      final endDate = Timestamp.fromDate(_getCombinedDateTime());
-
-      // Validate ratios
-      if (yesRatio <= 0 || noRatio <= 0) {
-        throw Exception('Oranlar 0\'dan büyük olmalıdır');
+      final closingDate = _getCombinedDateTime();
+      
+      // Get VARIM ratio input (e.g., "1.85" - decimal odds)
+      final varimRateText = _yesRatioController.text.trim();
+      final varimRate = double.tryParse(varimRateText);
+      
+      if (varimRate == null || varimRate <= 0) {
+        throw Exception('VARIM oranı geçerli bir sayı olmalıdır');
       }
 
-      // Create event document
+      // Calculate yesRatio for Firestore: yesRatio = 1.0 / input
+      // Example: If input is 1.85, yesRatio = 1.0 / 1.85 ≈ 0.54
+      // This stores the probability, not the decimal odds
+      final yesRatio = 1.0 / varimRate;
+      
+      // Calculate noRatio similarly
+      final noRatioText = _noRatioController.text.trim();
+      final noRatioInput = double.tryParse(noRatioText);
+      final noRatio = noRatioInput != null && noRatioInput > 0 
+          ? 1.0 / noRatioInput 
+          : (1.0 - yesRatio); // Fallback to complementary probability
+
+      // Create event document with all required fields
       await FirebaseFirestore.instance.collection('events').add({
         'title': title,
         'category': _selectedCategory,
         'imageUrl': imageUrl,
-        'yesRatio': yesRatio,
-        'noRatio': noRatio,
-        'endDate': endDate,
+        'yesRatio': yesRatio, // Probability (1.0 / input odds)
+        'noRatio': noRatio, // Probability (1.0 / input odds)
+        'rule': rule.isNotEmpty ? rule : 'Bu etkinlik resmi sonuçlara göre yönetici tarafından sonuçlandırılacaktır.',
+        'endDate': Timestamp.fromDate(closingDate),
         'volume': 0,
+        'poolYes': 0,
+        'poolNo': 0,
         'status': 'active',
-        if (rule.isNotEmpty) 'rule': rule,
+        'createdAt': FieldValue.serverTimestamp(),
       });
 
       if (mounted) {
@@ -129,21 +167,37 @@ class _AddEventScreenState extends State<AddEventScreen> {
             content: const Text('Etkinlik başarıyla oluşturuldu!'),
             backgroundColor: AppTheme.varimColors(context).varimColor,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 3),
           ),
         );
         Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
+        // Extract error message
+        String errorMessage = 'Bilinmeyen bir hata oluştu';
+        if (e is Exception) {
+          errorMessage = e.toString().replaceFirst('Exception: ', '');
+        } else {
+          errorMessage = e.toString();
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Hata: ${e.toString()}'),
+            content: Text('Hata: $errorMessage'),
             backgroundColor: AppTheme.varimColors(context).yokumColor,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5), // Longer duration for error messages
+            action: SnackBarAction(
+              label: 'Tamam',
+              textColor: Colors.white,
+              onPressed: () {},
+            ),
           ),
         );
       }
     } finally {
+      // Always reset loading state, even if there's an error
       if (mounted) {
         setState(() {
           _isSubmitting = false;
@@ -246,8 +300,9 @@ class _AddEventScreenState extends State<AddEventScreen> {
                 TextFormField(
                   controller: _imageUrlController,
                   decoration: InputDecoration(
-                    labelText: 'Görsel URL',
+                    labelText: 'Görsel URL *',
                     hintText: 'https://example.com/image.jpg',
+                    prefixIcon: const Icon(Icons.link),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -258,25 +313,59 @@ class _AddEventScreenState extends State<AddEventScreen> {
                         width: 2,
                       ),
                     ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: varimColors.yokumColor,
+                        width: 1,
+                      ),
+                    ),
                   ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Görsel URL\'si gereklidir';
+                    }
+                    if (!_isValidImageUrl(value)) {
+                      return 'Geçerli bir URL girin (http:// veya https://)';
+                    }
+                    return null;
+                  },
                 ),
-                if (_imageUrlController.text.isNotEmpty) ...[
+                if (_imageUrlController.text.isNotEmpty && _isValidImageUrl(_imageUrlController.text)) ...[
                   const SizedBox(height: 12),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.network(
                       _imageUrlController.text,
-                      height: 150,
+                      height: 200,
                       width: double.infinity,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
-                          height: 150,
-                          color: theme.colorScheme.surfaceContainer,
+                          height: 200,
+                          color: DesignSystem.surfaceLight,
                           child: Center(
-                            child: Text(
-                              'Görsel yüklenemedi',
-                              style: theme.textTheme.bodySmall,
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  color: varimColors.yokumColor,
+                                  size: 48,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Görsel yüklenemedi',
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'URL\'yi kontrol edin',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: DesignSystem.textBody,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         );
@@ -284,13 +373,23 @@ class _AddEventScreenState extends State<AddEventScreen> {
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
                         return Container(
-                          height: 150,
-                          color: theme.colorScheme.surfaceContainer,
+                          height: 200,
+                          color: DesignSystem.surfaceLight,
                           child: Center(
-                            child: CircularProgressIndicator(
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                varimColors.varimColor,
-                              ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    varimColors.varimColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Görsel yükleniyor...',
+                                  style: theme.textTheme.bodySmall,
+                                ),
+                              ],
                             ),
                           ),
                         );
@@ -472,17 +571,31 @@ class _AddEventScreenState extends State<AddEventScreen> {
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    disabledBackgroundColor: varimColors.varimColor.withValues(alpha: 0.6),
                   ),
                   child: _isSubmitting
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              theme.colorScheme.onPrimary,
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  theme.colorScheme.onPrimary,
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Yükleniyor...',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
                         )
                       : const Text(
                           'Etkinlik Oluştur',
